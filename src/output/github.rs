@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+use masterror::AppError;
+
 use super::formatter::Formatter;
-use crate::{config::Config, error::AppError, types::AnalysisResult};
+use crate::{config::Config, types::AnalysisResult};
 
 /// Formatter for GitHub Actions output
 pub struct GithubFormatter;

@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+use masterror::AppError;
+
 use super::{github::GithubFormatter, json::JsonFormatter};
 use crate::{
     config::{Config, OutputFormat},
-    error::AppError,
     types::AnalysisResult,
 };
 

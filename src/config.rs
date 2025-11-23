@@ -3,9 +3,10 @@
 
 use std::{collections::HashSet, fs, path::Path};
 
+use masterror::AppError;
 use serde::{Deserialize, Serialize};
 
-use crate::error::AppError;
+use crate::error::{ConfigError, ConfigValidationError, FileReadError};
 
 /// Classification configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -230,15 +231,10 @@ impl Config {
     /// let config = Config::from_file(Path::new(".rust-diff-analyzer.toml"));
     /// ```
     pub fn from_file(path: &Path) -> Result<Self, AppError> {
-        let content = fs::read_to_string(path).map_err(|e| AppError::FileRead {
-            path: path.to_path_buf(),
-            source: e,
-        })?;
+        let content =
+            fs::read_to_string(path).map_err(|e| AppError::from(FileReadError::new(path, e)))?;
 
-        toml::from_str(&content).map_err(|e| AppError::ConfigError {
-            path: path.to_path_buf(),
-            message: e.to_string(),
-        })
+        toml::from_str(&content).map_err(|e| AppError::from(ConfigError::new(path, e.to_string())))
     }
 
     /// Validates configuration values
@@ -261,17 +257,19 @@ impl Config {
     /// ```
     pub fn validate(&self) -> Result<(), AppError> {
         if self.limits.max_prod_units == 0 {
-            return Err(AppError::ConfigValidation {
+            return Err(ConfigValidationError {
                 field: "limits.max_prod_units".to_string(),
                 message: "must be greater than 0".to_string(),
-            });
+            }
+            .into());
         }
 
         if self.limits.max_weighted_score == 0 {
-            return Err(AppError::ConfigValidation {
+            return Err(ConfigValidationError {
                 field: "limits.max_weighted_score".to_string(),
                 message: "must be greater than 0".to_string(),
-            });
+            }
+            .into());
         }
 
         Ok(())

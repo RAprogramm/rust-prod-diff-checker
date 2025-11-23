@@ -3,8 +3,13 @@
 
 use std::{fs, path::Path};
 
+use masterror::AppError;
+
 use super::ast_visitor::SemanticUnitVisitor;
-use crate::{error::AppError, types::SemanticUnit};
+use crate::{
+    error::{FileReadError, ParseError},
+    types::SemanticUnit,
+};
 
 /// Extracts semantic units from a Rust source file
 ///
@@ -30,10 +35,8 @@ use crate::{error::AppError, types::SemanticUnit};
 /// let units = extract_semantic_units(Path::new("src/lib.rs"));
 /// ```
 pub fn extract_semantic_units(path: &Path) -> Result<Vec<SemanticUnit>, AppError> {
-    let content = fs::read_to_string(path).map_err(|e| AppError::FileRead {
-        path: path.to_path_buf(),
-        source: e,
-    })?;
+    let content =
+        fs::read_to_string(path).map_err(|e| AppError::from(FileReadError::new(path, e)))?;
 
     extract_semantic_units_from_str(&content, path)
 }
@@ -68,10 +71,8 @@ pub fn extract_semantic_units_from_str(
     content: &str,
     path: &Path,
 ) -> Result<Vec<SemanticUnit>, AppError> {
-    let file = syn::parse_file(content).map_err(|e| AppError::ParseError {
-        path: path.to_path_buf(),
-        message: e.to_string(),
-    })?;
+    let file = syn::parse_file(content)
+        .map_err(|e| AppError::from(ParseError::new(path, e.to_string())))?;
 
     Ok(SemanticUnitVisitor::extract(&file))
 }

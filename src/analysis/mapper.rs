@@ -3,11 +3,13 @@
 
 use std::{collections::HashMap, path::Path};
 
+use masterror::AppError;
+
 use super::extractor::extract_semantic_units_from_str;
 use crate::{
     classifier::classify_unit,
     config::Config,
-    error::AppError,
+    error::FileReadError,
     git::FileDiff,
     types::{Change, SemanticUnit},
 };
@@ -58,10 +60,8 @@ where
             continue;
         }
 
-        let content = file_reader(&diff.path).map_err(|e| AppError::FileRead {
-            path: diff.path.clone(),
-            source: e,
-        })?;
+        let content = file_reader(&diff.path)
+            .map_err(|e| AppError::from(FileReadError::new(diff.path.clone(), e)))?;
 
         let units = extract_semantic_units_from_str(&content, &diff.path)?;
 

@@ -3,8 +3,10 @@
 
 use std::path::PathBuf;
 
+use masterror::AppError;
+
 use super::hunk::{Hunk, HunkLine};
-use crate::error::AppError;
+use crate::error::DiffParseError;
 
 /// A file diff containing all hunks for a single file
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -258,9 +260,10 @@ pub fn parse_diff(input: &str) -> Result<Vec<FileDiff>, AppError> {
 fn parse_diff_header(line: &str) -> Result<PathBuf, AppError> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() < 4 {
-        return Err(AppError::DiffParseError {
+        return Err(DiffParseError {
             message: format!("invalid diff header: {}", line),
-        });
+        }
+        .into());
     }
 
     let b_path = parts[3];
@@ -272,29 +275,32 @@ fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), AppErro
     let line = line
         .strip_prefix("@@")
         .and_then(|s| s.split("@@").next())
-        .ok_or_else(|| AppError::DiffParseError {
-            message: format!("invalid hunk header: {}", line),
+        .ok_or_else(|| {
+            AppError::from(DiffParseError {
+                message: format!("invalid hunk header: {}", line),
+            })
         })?
         .trim();
 
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() < 2 {
-        return Err(AppError::DiffParseError {
+        return Err(DiffParseError {
             message: format!("invalid hunk header: {}", line),
-        });
+        }
+        .into());
     }
 
-    let old_range = parts[0]
-        .strip_prefix('-')
-        .ok_or_else(|| AppError::DiffParseError {
+    let old_range = parts[0].strip_prefix('-').ok_or_else(|| {
+        AppError::from(DiffParseError {
             message: format!("invalid old range: {}", parts[0]),
-        })?;
+        })
+    })?;
 
-    let new_range = parts[1]
-        .strip_prefix('+')
-        .ok_or_else(|| AppError::DiffParseError {
+    let new_range = parts[1].strip_prefix('+').ok_or_else(|| {
+        AppError::from(DiffParseError {
             message: format!("invalid new range: {}", parts[1]),
-        })?;
+        })
+    })?;
 
     let (old_start, old_count) = parse_range(old_range)?;
     let (new_start, new_count) = parse_range(new_range)?;
@@ -305,18 +311,18 @@ fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), AppErro
 fn parse_range(range: &str) -> Result<(usize, usize), AppError> {
     let parts: Vec<&str> = range.split(',').collect();
 
-    let start = parts[0]
-        .parse::<usize>()
-        .map_err(|_| AppError::DiffParseError {
+    let start = parts[0].parse::<usize>().map_err(|_| {
+        AppError::from(DiffParseError {
             message: format!("invalid line number: {}", parts[0]),
-        })?;
+        })
+    })?;
 
     let count = if parts.len() > 1 {
-        parts[1]
-            .parse::<usize>()
-            .map_err(|_| AppError::DiffParseError {
+        parts[1].parse::<usize>().map_err(|_| {
+            AppError::from(DiffParseError {
                 message: format!("invalid line count: {}", parts[1]),
-            })?
+            })
+        })?
     } else {
         1
     };

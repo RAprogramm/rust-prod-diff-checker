@@ -15,17 +15,27 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 similar = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.8"
+toml = "0.9"
 clap = { version = "4", features = ["derive"] }
+masterror = "0.25"
 
 [dev-dependencies]
 pretty_assertions = "1"
 tempfile = "3"
+criterion = { version = "0.7", features = ["html_reports"] }
+proptest = "1"
+
+[[bench]]
+name = "analysis"
+harness = false
 
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(masterror_has_error_generic_member_access)'] }
 
 [[bin]]
 name = "rust-diff-analyzer"

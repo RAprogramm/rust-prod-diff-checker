@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+use masterror::AppError;
 use serde::Serialize;
 
 use super::formatter::Formatter;
-use crate::{config::Config, error::AppError, types::AnalysisResult};
+use crate::{config::Config, error::OutputError, types::AnalysisResult};
 
 /// Formatter for JSON output
 pub struct JsonFormatter;
@@ -51,9 +52,11 @@ impl Formatter for JsonFormatter {
             changes,
         };
 
-        serde_json::to_string_pretty(&output).map_err(|e| AppError::OutputError {
-            format: "json".to_string(),
-            message: e.to_string(),
+        serde_json::to_string_pretty(&output).map_err(|e| {
+            AppError::from(OutputError {
+                format: "json".to_string(),
+                message: e.to_string(),
+            })
         })
     }
 }

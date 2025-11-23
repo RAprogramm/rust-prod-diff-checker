@@ -9,11 +9,12 @@ use std::{
 };
 
 use clap::Parser;
+use masterror::AppError;
 use rust_diff_analyzer::{
     analysis::map_changes,
     classifier::rules::calculate_weight,
     config::{Config, OutputFormat},
-    error::AppError,
+    error::FileReadError,
     git::parse_diff,
     output::format_output,
     types::{AnalysisResult, SemanticUnitKind, Summary},
@@ -141,15 +142,14 @@ fn run() -> Result<(), AppError> {
 
 fn read_diff(path: &Option<PathBuf>) -> Result<String, AppError> {
     match path {
-        Some(p) => fs::read_to_string(p).map_err(|e| AppError::FileRead {
-            path: p.clone(),
-            source: e,
-        }),
+        Some(p) => {
+            fs::read_to_string(p).map_err(|e| AppError::from(FileReadError::new(p.clone(), e)))
+        }
         None => {
             let mut buffer = String::new();
             io::stdin()
                 .read_to_string(&mut buffer)
-                .map_err(AppError::Io)?;
+                .map_err(|e| AppError::from(rust_diff_analyzer::error::IoError(e)))?;
             Ok(buffer)
         }
     }

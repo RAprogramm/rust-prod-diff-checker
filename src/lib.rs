@@ -10,5 +10,9 @@ pub mod output;
 pub mod types;
 
 pub use config::Config;
-pub use error::AppError;
+pub use error::{
+    ConfigError, ConfigValidationError, DiffParseError, FileReadError, IoError,
+    LimitExceededError, OutputError, ParseError,
+};
+pub use masterror::AppError;
 pub use types::{AnalysisResult, Change, CodeType, SemanticUnit, Summary};
