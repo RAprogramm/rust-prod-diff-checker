@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### CI/CD
 
+- Fix JUnit XML file name pattern for Codecov ([a81fd90](https://github.com/RAprogramm/rust-prod-diff-checker/commit/a81fd907ae164a2d01585b9550c84377f2f91e79))
 - Professional changelog with Keep a Changelog format ([778be2b](https://github.com/RAprogramm/rust-prod-diff-checker/commit/778be2bc9f9aa539e18180233b668b071f2a712a))
 - Prevent changelog CI loop with skip ci ([7a55381](https://github.com/RAprogramm/rust-prod-diff-checker/commit/7a553816a32dd09f773a9721dd72cefdfa0d3de1))
 - Add rebase before changelog push ([8a37590](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8a37590e66a260072d87008082393ccfc20c7464))
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Update changelog [skip ci] ([3308689](https://github.com/RAprogramm/rust-prod-diff-checker/commit/33086895e1f4f4fd2690e09797bd2d2febd92ded))
 - Add Hits-of-Code badge ([8971ba7](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8971ba7612804487a006fec6370821072d5af4d2))
 - Update changelog [skip ci] ([0982176](https://github.com/RAprogramm/rust-prod-diff-checker/commit/0982176a4e2f5afe119cb1f34366954848d848d3))
 - Update changelog ([35cb5f0](https://github.com/RAprogramm/rust-prod-diff-checker/commit/35cb5f073bd62f6bc03389eefa48a88845d8e20f))
