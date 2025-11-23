@@ -199,6 +199,8 @@ pub enum OutputFormat {
     Json,
     /// Human-readable output format
     Human,
+    /// Markdown comment format for PR comments
+    Comment,
 }
 
 /// Output configuration

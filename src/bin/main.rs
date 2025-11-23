@@ -59,6 +59,7 @@ enum OutputFormatArg {
     Github,
     Json,
     Human,
+    Comment,
 }
 
 fn main() {
@@ -87,6 +88,7 @@ fn run() -> Result<(), AppError> {
             OutputFormatArg::Github => OutputFormat::Github,
             OutputFormatArg::Json => OutputFormat::Json,
             OutputFormatArg::Human => OutputFormat::Human,
+            OutputFormatArg::Comment => OutputFormat::Comment,
         };
     }
 

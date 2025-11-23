@@ -3,7 +3,7 @@
 
 use masterror::AppError;
 
-use super::{github::GithubFormatter, json::JsonFormatter};
+use super::{comment::format_comment, github::GithubFormatter, json::JsonFormatter};
 use crate::{
     config::{Config, OutputFormat},
     types::AnalysisResult,
@@ -61,6 +61,7 @@ pub fn format_output(result: &AnalysisResult, config: &Config) -> Result<String,
         OutputFormat::Github => GithubFormatter.format(result, config),
         OutputFormat::Json => JsonFormatter.format(result, config),
         OutputFormat::Human => format_human(result, config),
+        OutputFormat::Comment => Ok(format_comment(result, config)),
     }
 }
 

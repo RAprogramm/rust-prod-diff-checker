@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
 description = "Semantic analyzer for Rust PR diffs that distinguishes production code from test code"
 license = "MIT"
-repository = "https://github.com/RAprogramm/rust-diff-analyzer"
+repository = "https://github.com/RAprogramm/rust-prod-diff-checker"
 keywords = ["rust", "diff", "analyzer", "github-actions", "code-review"]
 categories = ["development-tools", "command-line-utilities"]
 

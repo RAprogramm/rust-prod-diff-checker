@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: rust-diff-analyzer
 Upstream-Contact: RAprogramm <andrey.rozanov.vl@gmail.com>
-Source: https://github.com/RAprogramm/rust-diff-analyzer
+Source: https://github.com/RAprogramm/rust-prod-diff-checker
 
 Files: Cargo.toml Cargo.lock
 Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>

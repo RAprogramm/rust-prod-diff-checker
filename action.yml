@@ -31,6 +31,14 @@ inputs:
     description: 'Path to configuration file'
     required: false
     default: ''
+  post_comment:
+    description: 'Post analysis as PR comment'
+    required: false
+    default: 'false'
+  update_comment:
+    description: 'Update existing comment instead of creating new'
+    required: false
+    default: 'true'
 
 outputs:
   prod_functions_changed:
@@ -119,4 +127,40 @@ runs:
             echo "::error::Production code changes exceed configured limits"
             exit 1
           fi
+        fi
+
+    - name: Post PR comment
+      if: inputs.post_comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        ARGS="--diff-file /tmp/pr_diff.txt"
+        ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
+        ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
+        ARGS="$ARGS --format comment"
+
+        if [ -n "${{ inputs.config_file }}" ]; then
+          ARGS="$ARGS --config ${{ inputs.config_file }}"
+        fi
+
+        COMMENT=$(${{ github.action_path }}/target/release/rust-diff-analyzer $ARGS)
+        MARKER="<!-- rust-diff-analyzer-comment -->"
+        PR_NUMBER=${{ github.event.pull_request.number }}
+
+        if [ "${{ inputs.update_comment }}" = "true" ]; then
+          EXISTING=$(gh api repos/${{ github.repository }}/issues/${PR_NUMBER}/comments \
+            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            gh api repos/${{ github.repository }}/issues/comments/${EXISTING} \
+              -X PATCH -f body="$COMMENT"
+            echo "Updated existing comment"
+          else
+            gh pr comment $PR_NUMBER --body "$COMMENT"
+            echo "Created new comment"
+          fi
+        else
+          gh pr comment $PR_NUMBER --body "$COMMENT"
+          echo "Created new comment"
         fi
