@@ -338,4 +338,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Publish
-        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty
+        run: |
+          output=$(cargo publish --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty 2>&1) || {
+            if echo "$output" | grep -q "already exists"; then
+              echo "::notice::Version already published to crates.io"
+              exit 0
+            else
+              echo "$output"
+              exit 1
+            fi
+          }
