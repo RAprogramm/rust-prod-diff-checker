@@ -5,10 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-11-23
+
+### Miscellaneous
+
+- Bump version to 1.1.1 ([0f82a83](https://github.com/RAprogramm/rust-prod-diff-checker/commit/0f82a830a364e2a69e9c73bbad8ca628c010ebb9))
+
 ## [1.1.0] - 2025-11-23
 
 ### CI/CD
 
+- Optimize workflow structure and add concurrency ([bc642ab](https://github.com/RAprogramm/rust-prod-diff-checker/commit/bc642abbb48a4121699357a5c64104df24cfe0ab))
 - Handle existing crate version gracefully ([022b163](https://github.com/RAprogramm/rust-prod-diff-checker/commit/022b1631ba1374cfd486f366f99a3816d632e210))
 - Publish only on full version tags ([b996dde](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b996ddedaee259f0f1f3206ce43918aa2c5b53fd))
 - Fix publish with --allow-dirty ([5c81c4c](https://github.com/RAprogramm/rust-prod-diff-checker/commit/5c81c4c11f3a7856d74cfb5f17e662f40a180b36))
@@ -16,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Update changelog [skip ci] ([2003518](https://github.com/RAprogramm/rust-prod-diff-checker/commit/20035182edef804871d17cb551cd6bc887027004))
 - Update changelog [skip ci] ([b8470bf](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b8470bf39c1a6424aac2cf0907c7b868692373ad))
 - Update changelog [skip ci] ([4fb5333](https://github.com/RAprogramm/rust-prod-diff-checker/commit/4fb5333a34d79a0e2cc318fb3c7c7e2ca7855220))
 - Update changelog [skip ci] ([9a19aaa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9a19aaa71425a0370921305e62ce4f422d824b21))
@@ -96,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
+[1.1.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/RAprogramm/rust-prod-diff-checker/releases/tag/v1.0.0
 
