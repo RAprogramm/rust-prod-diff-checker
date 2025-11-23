@@ -9,8 +9,57 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changelog:
+    name: Update Changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_body: ${{ steps.extract.outputs.release_body }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog with tag
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: update changelog for ${GITHUB_REF#refs/tags/}"
+            git push origin HEAD:main
+          fi
+
+      - name: Extract release notes
+        id: extract
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose --latest --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+
+      - name: Set output
+        id: notes
+        run: |
+          {
+            echo 'release_body<<EOF'
+            cat RELEASE_NOTES.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
   build:
     name: Build ${{ matrix.target }}
+    needs: changelog
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -83,7 +132,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: build
+    needs: [changelog, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -94,21 +143,8 @@ jobs:
         with:
           path: artifacts
 
-      - name: Extract changelog for version
-        id: changelog
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "Extracting changelog for $VERSION"
-          # Extract section between version headers
-          awk "/^## \[?${VERSION}\]?/,/^## \[?v[0-9]/" CHANGELOG.md | head -n -1 > release_notes.md
-          if [ ! -s release_notes.md ]; then
-            echo "No changelog found for $VERSION, using default"
-            echo "Release $VERSION" > release_notes.md
-          fi
-          cat release_notes.md
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: release_notes.md
+          body: ${{ needs.changelog.outputs.release_body }}
           files: artifacts/**/*

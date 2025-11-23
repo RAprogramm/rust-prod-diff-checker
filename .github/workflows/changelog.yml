@@ -3,6 +3,8 @@ name: Changelog
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'CHANGELOG.md'
 
 permissions:
   contents: write
