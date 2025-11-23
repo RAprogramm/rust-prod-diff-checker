@@ -33,14 +33,17 @@ body = """
 
 """
 footer = """
+{%- set repo_url = "https://github.com/RAprogramm/rust-prod-diff-checker" -%}
 {% for release in releases -%}
 {% if release.version -%}
 {% if release.previous.version -%}
-[{{ release.version | trim_start_matches(pat="v") }}]: {{ self::remote_url() }}/compare/{{ release.previous.version }}...{{ release.version }}
+[{{ release.version | trim_start_matches(pat="v") }}]: {{ repo_url }}/compare/{{ release.previous.version }}...{{ release.version }}
+{% else -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: {{ repo_url }}/releases/tag/{{ release.version }}
 {% endif -%}
 {% else -%}
 {% if release.previous.version -%}
-[Unreleased]: {{ self::remote_url() }}/compare/{{ release.previous.version }}...HEAD
+[Unreleased]: {{ repo_url }}/compare/{{ release.previous.version }}...HEAD
 {% endif -%}
 {% endif -%}
 {% endfor %}
