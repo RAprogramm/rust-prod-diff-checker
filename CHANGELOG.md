@@ -9,20 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### CI/CD
 
+- Publish only on full version tags ([b996dde](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b996ddedaee259f0f1f3206ce43918aa2c5b53fd))
 - Fix publish with --allow-dirty ([5c81c4c](https://github.com/RAprogramm/rust-prod-diff-checker/commit/5c81c4c11f3a7856d74cfb5f17e662f40a180b36))
-
-### Documentation
-
-- Update changelog [skip ci] ([9a19aaa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9a19aaa71425a0370921305e62ce4f422d824b21))
-
-## [1] - 2025-11-23
-
-### CI/CD
-
 - Add crates.io publish job on tag push ([be5666f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/be5666f0752b5899675f7d558a83567ad1428dbf))
 
 ### Documentation
 
+- Update changelog [skip ci] ([4fb5333](https://github.com/RAprogramm/rust-prod-diff-checker/commit/4fb5333a34d79a0e2cc318fb3c7c7e2ca7855220))
+- Update changelog [skip ci] ([9a19aaa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9a19aaa71425a0370921305e62ce4f422d824b21))
 - Add crates.io and docs.rs badges ([510a122](https://github.com/RAprogramm/rust-prod-diff-checker/commit/510a122d8ed07cdfdc802543d063957c4c62a7c7))
 - Update changelog [skip ci] ([621d6eb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/621d6ebaa13da66d98276e002402d29f72c4d090))
 - Update changelog [skip ci] ([8014b73](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8014b73aa54143144fb72c48f1228256ba8cdd20))
@@ -100,7 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
-[1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...v1.1.0
-[1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1
+[1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/RAprogramm/rust-prod-diff-checker/releases/tag/v1.0.0
 
