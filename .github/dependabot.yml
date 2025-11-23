@@ -25,3 +25,7 @@ updates:
     commit-message:
       prefix: "ci"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
