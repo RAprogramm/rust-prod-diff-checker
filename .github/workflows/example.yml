@@ -12,6 +12,9 @@ jobs:
   analyze:
     name: Analyze Rust Changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -21,7 +24,7 @@ jobs:
 
       - name: Analyze PR diff
         id: diff_analysis
-        uses: RAprogramm/rust-diff-analyzer@v1
+        uses: RAprogramm/rust-prod-diff-checker@v1
         with:
           max_prod_units: '30'
           max_weighted_score: '100'

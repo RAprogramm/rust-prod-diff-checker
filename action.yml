@@ -15,6 +15,10 @@ inputs:
     description: 'Maximum weighted score allowed'
     required: false
     default: '100'
+  max_prod_lines:
+    description: 'Maximum production lines added'
+    required: false
+    default: ''
   fail_on_exceed:
     description: 'Fail the action if limits are exceeded'
     required: false
@@ -93,6 +97,10 @@ runs:
         ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
         ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
         ARGS="$ARGS --format ${{ inputs.output_format }}"
+
+        if [ -n "${{ inputs.max_prod_lines }}" ]; then
+          ARGS="$ARGS --max-lines ${{ inputs.max_prod_lines }}"
+        fi
 
         if [ -n "${{ inputs.config_file }}" ]; then
           ARGS="$ARGS --config ${{ inputs.config_file }}"

@@ -116,6 +116,34 @@ fn default_const_weight() -> usize {
     1
 }
 
+/// Per-type limit configuration
+///
+/// All fields are optional. When set, the analyzer will check that the number
+/// of changed units of each type does not exceed the specified limit.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PerTypeLimits {
+    /// Maximum number of functions
+    pub functions: Option<usize>,
+    /// Maximum number of structs
+    pub structs: Option<usize>,
+    /// Maximum number of enums
+    pub enums: Option<usize>,
+    /// Maximum number of traits
+    pub traits: Option<usize>,
+    /// Maximum number of impl blocks
+    pub impl_blocks: Option<usize>,
+    /// Maximum number of constants
+    pub consts: Option<usize>,
+    /// Maximum number of statics
+    pub statics: Option<usize>,
+    /// Maximum number of type aliases
+    pub type_aliases: Option<usize>,
+    /// Maximum number of macros
+    pub macros: Option<usize>,
+    /// Maximum number of modules
+    pub modules: Option<usize>,
+}
+
 /// Limit configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitsConfig {
@@ -125,6 +153,12 @@ pub struct LimitsConfig {
     /// Maximum weighted score allowed
     #[serde(default = "default_max_weighted_score")]
     pub max_weighted_score: usize,
+    /// Maximum number of production lines added
+    #[serde(default)]
+    pub max_prod_lines: Option<usize>,
+    /// Per-type limits for fine-grained control
+    #[serde(default)]
+    pub per_type: Option<PerTypeLimits>,
     /// Whether to fail when limits are exceeded
     #[serde(default = "default_fail_on_exceed")]
     pub fail_on_exceed: bool,
@@ -135,6 +169,8 @@ impl Default for LimitsConfig {
         Self {
             max_prod_units: default_max_prod_units(),
             max_weighted_score: default_max_weighted_score(),
+            max_prod_lines: None,
+            per_type: None,
             fail_on_exceed: default_fail_on_exceed(),
         }
     }
@@ -492,6 +528,55 @@ impl ConfigBuilder {
     /// ```
     pub fn fail_on_exceed(mut self, fail: bool) -> Self {
         self.config.limits.fail_on_exceed = fail;
+        self
+    }
+
+    /// Sets the maximum production lines limit
+    ///
+    /// # Arguments
+    ///
+    /// * `limit` - Maximum number of production lines added
+    ///
+    /// # Returns
+    ///
+    /// Self for method chaining
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::config::ConfigBuilder;
+    ///
+    /// let config = ConfigBuilder::new().max_prod_lines(200).build();
+    /// ```
+    pub fn max_prod_lines(mut self, limit: usize) -> Self {
+        self.config.limits.max_prod_lines = Some(limit);
+        self
+    }
+
+    /// Sets per-type limits
+    ///
+    /// # Arguments
+    ///
+    /// * `limits` - Per-type limit configuration
+    ///
+    /// # Returns
+    ///
+    /// Self for method chaining
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::config::{ConfigBuilder, PerTypeLimits};
+    ///
+    /// let per_type = PerTypeLimits {
+    ///     functions: Some(5),
+    ///     structs: Some(3),
+    ///     ..Default::default()
+    /// };
+    /// let config = ConfigBuilder::new().per_type_limits(per_type).build();
+    /// ```
+    pub fn per_type_limits(mut self, limits: PerTypeLimits) -> Self {
+        self.config.limits.per_type = Some(limits);
         self
     }
 

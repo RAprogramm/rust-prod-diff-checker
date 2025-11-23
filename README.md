@@ -95,7 +95,15 @@ const_static = 1
 [limits]
 max_prod_units = 30
 max_weighted_score = 100
+max_prod_lines = 200
 fail_on_exceed = true
+
+# Optional: per-type limits for fine-grained control
+[limits.per_type]
+functions = 5
+structs = 3
+traits = 2
+impl_blocks = 10
 
 [output]
 format = "github"
