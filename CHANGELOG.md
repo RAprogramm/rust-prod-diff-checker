@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Changelog footer template macro scope and first release handling ([efca381](https://github.com/RAprogramm/rust-prod-diff-checker/commit/efca3811bb95f19e04ba376f0f2f9d444b273eea))
+
+## [1] - 2025-11-23
+
+### Documentation
+
+- Update description to emphasize PR size limiting ([d97cce8](https://github.com/RAprogramm/rust-prod-diff-checker/commit/d97cce83a1b61ead194b3cea9aba5146f7eb0bdb))
+
+## [1.0.0] - 2025-11-23
+
 ### Added
 
 - Add Codecov integration with coverage and test results ([4f6ab0e](https://github.com/RAprogramm/rust-prod-diff-checker/commit/4f6ab0edc3c96e58f3c8ea752e4011254e338af0))
@@ -16,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### CI/CD
 
+- Integrate release workflow into CI ([8d08ebb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8d08ebb04aebd12d0b2405d5658d1596b8bac450))
 - Use flag_management for automatic flag detection ([e73ea87](https://github.com/RAprogramm/rust-prod-diff-checker/commit/e73ea87b02f9c4f11515271e11171a39bb288f1d))
 - Changelog updates on any push to main ([b9896aa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b9896aacceeb787a4230c028df95683607d380e9))
 - Optimize with path filters to skip unnecessary jobs ([228cdb5](https://github.com/RAprogramm/rust-prod-diff-checker/commit/228cdb543a13294128c591b21b19fca52ada93ac))
@@ -34,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Update release badge to show version ([051b477](https://github.com/RAprogramm/rust-prod-diff-checker/commit/051b4775a7c7bf01c9508a5b677c5c3d9d18ec4a))
+- Update changelog [skip ci] ([1565ad7](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1565ad723dcd5aefff4116de0362b332d539e2d4))
 - Update changelog [skip ci] ([fc6605a](https://github.com/RAprogramm/rust-prod-diff-checker/commit/fc6605aa7293edbd0eda15b6f2dc9c07cdc49475))
 - Update changelog [skip ci] ([c1d1662](https://github.com/RAprogramm/rust-prod-diff-checker/commit/c1d1662d2ba50680ee64d1a0bc46697be745962b))
 - Update changelog [skip ci] ([3308689](https://github.com/RAprogramm/rust-prod-diff-checker/commit/33086895e1f4f4fd2690e09797bd2d2febd92ded))
@@ -60,4 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
+[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...HEAD
+[1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1
+[1.0.0]: https://github.com/RAprogramm/rust-prod-diff-checker/releases/tag/v1.0.0
 
