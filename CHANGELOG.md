@@ -12,6 +12,8 @@
 - Add status badges to README
 - Fix license badge link to REUSE
 - Fix badges in README
+- Update changelog
+- Add coverage graph descriptions
 
 ## Features
 
@@ -25,5 +27,8 @@
 - Add REUSE compliance
 - Bump the github-actions group with 6 updates
 - Use deploy key for changelog workflows
+- Move changelog to main CI workflow
+- Add Codecov configuration
+- Add rebase before changelog push
 
 
