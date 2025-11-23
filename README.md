@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/RAprogramm/rust-prod-diff-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/rust-prod-diff-checker/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/RAprogramm/rust-prod-diff-checker)](https://github.com/RAprogramm/rust-prod-diff-checker/releases/latest)
+[![Crates.io](https://img.shields.io/crates/v/rust-diff-analyzer)](https://crates.io/crates/rust-diff-analyzer)
+[![docs.rs](https://img.shields.io/docsrs/rust-diff-analyzer)](https://docs.rs/rust-diff-analyzer)
 [![codecov](https://codecov.io/gh/RAprogramm/rust-prod-diff-checker/graph/badge.svg?token=cbXm5iD9PQ)](https://codecov.io/gh/RAprogramm/rust-prod-diff-checker)
 [![Hits-of-Code](https://hitsofcode.com/github/RAprogramm/rust-prod-diff-checker?branch=main&exclude=Cargo.lock,.gitignore,CHANGELOG.md)](https://hitsofcode.com/github/RAprogramm/rust-prod-diff-checker/view?branch=main&exclude=Cargo.lock,.gitignore,CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/RAprogramm/rust-prod-diff-checker/blob/main/LICENSES/MIT.txt)
