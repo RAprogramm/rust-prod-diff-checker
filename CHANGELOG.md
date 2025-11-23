@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### CI/CD
 
+- Handle existing crate version gracefully ([022b163](https://github.com/RAprogramm/rust-prod-diff-checker/commit/022b1631ba1374cfd486f366f99a3816d632e210))
 - Publish only on full version tags ([b996dde](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b996ddedaee259f0f1f3206ce43918aa2c5b53fd))
 - Fix publish with --allow-dirty ([5c81c4c](https://github.com/RAprogramm/rust-prod-diff-checker/commit/5c81c4c11f3a7856d74cfb5f17e662f40a180b36))
 - Add crates.io publish job on tag push ([be5666f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/be5666f0752b5899675f7d558a83567ad1428dbf))
 
 ### Documentation
 
+- Update changelog [skip ci] ([b8470bf](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b8470bf39c1a6424aac2cf0907c7b868692373ad))
 - Update changelog [skip ci] ([4fb5333](https://github.com/RAprogramm/rust-prod-diff-checker/commit/4fb5333a34d79a0e2cc318fb3c7c7e2ca7855220))
 - Update changelog [skip ci] ([9a19aaa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9a19aaa71425a0370921305e62ce4f422d824b21))
 - Add crates.io and docs.rs badges ([510a122](https://github.com/RAprogramm/rust-prod-diff-checker/commit/510a122d8ed07cdfdc802543d063957c4c62a7c7))
