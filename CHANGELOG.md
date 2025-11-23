@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### CI/CD
 
+- Fix publish with --allow-dirty ([5c81c4c](https://github.com/RAprogramm/rust-prod-diff-checker/commit/5c81c4c11f3a7856d74cfb5f17e662f40a180b36))
+
+### Documentation
+
+- Update changelog [skip ci] ([9a19aaa](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9a19aaa71425a0370921305e62ce4f422d824b21))
+
+## [1] - 2025-11-23
+
+### CI/CD
+
 - Add crates.io publish job on tag push ([be5666f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/be5666f0752b5899675f7d558a83567ad1428dbf))
 
 ### Documentation
@@ -90,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
-[1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1.1.0
+[1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...v1.1.0
+[1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1
 [1.0.0]: https://github.com/RAprogramm/rust-prod-diff-checker/releases/tag/v1.0.0
 
