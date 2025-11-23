@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use std::path::Path;
 
 use rust_diff_analyzer::analysis::extractor::extract_semantic_units_from_str;

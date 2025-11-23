@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use super::{github::GithubFormatter, json::JsonFormatter};
 use crate::{
     config::{Config, OutputFormat},

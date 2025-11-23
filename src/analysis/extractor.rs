@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use std::{fs, path::Path};
 
 use super::ast_visitor::SemanticUnitVisitor;

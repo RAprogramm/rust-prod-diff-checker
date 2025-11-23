@@ -1,0 +1,28 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: rust-diff-analyzer
+Upstream-Contact: RAprogramm <andrey.rozanov.vl@gmail.com>
+Source: https://github.com/RAprogramm/rust-diff-analyzer
+
+Files: Cargo.toml Cargo.lock
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
+
+Files: .rustfmt.toml
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
+
+Files: .github/workflows/*
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
+
+Files: action.yml
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
+
+Files: PLAN.md
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
+
+Files: .gitignore
+Copyright: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
+License: MIT
