@@ -3,11 +3,13 @@
 
 use std::path::Path;
 
-use rust_diff_analyzer::analysis::extractor::extract_semantic_units_from_str;
-use rust_diff_analyzer::classifier::classify_unit;
-use rust_diff_analyzer::config::{Config, ConfigBuilder};
-use rust_diff_analyzer::git::parse_diff;
-use rust_diff_analyzer::types::CodeType;
+use rust_diff_analyzer::{
+    analysis::extractor::extract_semantic_units_from_str,
+    classifier::classify_unit,
+    config::{Config, ConfigBuilder},
+    git::parse_diff,
+    types::CodeType,
+};
 
 #[test]
 fn test_diff_with_only_removals() {
@@ -81,8 +83,8 @@ diff --git a/src/lib.rs b/src/lib.rs
 #[test]
 fn test_empty_function() {
     let code = "pub fn empty() {}";
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
     assert_eq!(units[0].name, "empty");
@@ -102,8 +104,8 @@ pub fn many_args(
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
     assert_eq!(units[0].name, "many_args");
@@ -123,8 +125,8 @@ pub mod a {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "deep_func"));
 }
@@ -147,8 +149,8 @@ impl<'a> Borrowed<'a> {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "Borrowed"));
     assert!(units.iter().any(|u| u.name == "new"));
@@ -167,8 +169,8 @@ where
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
     assert_eq!(units[0].name, "complex_generic");
@@ -188,8 +190,8 @@ pub fn safe_wrapper() {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "dangerous"));
     assert!(units.iter().any(|u| u.name == "safe_wrapper"));
@@ -207,8 +209,8 @@ pub extern "C" fn exported_func() -> i32 {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "exported_func"));
 }
@@ -252,8 +254,8 @@ pub fn documented() -> i32 {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
 }
@@ -271,8 +273,8 @@ pub fn windows_only() {}
 pub fn full_feature() {}
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "linux_only"));
     assert!(units.iter().any(|u| u.name == "windows_only"));
@@ -289,8 +291,8 @@ pub trait Iterator {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "Iterator"));
     assert!(units.iter().any(|u| u.name == "next"));
@@ -308,8 +310,8 @@ pub trait Default {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "default"));
     assert!(units.iter().any(|u| u.name == "is_default"));
@@ -323,8 +325,8 @@ pub struct Point(pub i32, pub i32);
 pub struct Wrapper<T>(T);
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "Point"));
     assert!(units.iter().any(|u| u.name == "Wrapper"));
@@ -334,8 +336,8 @@ pub struct Wrapper<T>(T);
 fn test_unit_struct() {
     let code = "pub struct Empty;";
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
     assert_eq!(units[0].name, "Empty");
@@ -396,10 +398,13 @@ fn benchmark_operation(b: &mut Bencher) {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
-    let bench = units.iter().find(|u| u.name == "benchmark_operation").unwrap();
+    let bench = units
+        .iter()
+        .find(|u| u.name == "benchmark_operation")
+        .unwrap();
     assert!(bench.has_attribute("bench"));
 
     let config = Config::default();
@@ -415,8 +420,8 @@ fn test_inner_attributes() {
 pub fn allowed_dead() {}
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "allowed_dead"));
 }
@@ -430,8 +435,8 @@ pub fn with_closure() {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 1);
     assert_eq!(units[0].name, "with_closure");
@@ -451,8 +456,8 @@ impl<const N: usize> Array<N> {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "Array"));
     assert!(units.iter().any(|u| u.name == "new"));

@@ -3,13 +3,14 @@
 
 use std::path::Path;
 
-use rust_diff_analyzer::analysis::extractor::extract_semantic_units_from_str;
-use rust_diff_analyzer::analysis::map_changes;
-use rust_diff_analyzer::classifier::classify_unit;
-use rust_diff_analyzer::config::Config;
-use rust_diff_analyzer::git::parse_diff;
-use rust_diff_analyzer::output::format_output;
-use rust_diff_analyzer::types::{AnalysisResult, CodeType, SemanticUnitKind, Summary};
+use rust_diff_analyzer::{
+    analysis::{extractor::extract_semantic_units_from_str, map_changes},
+    classifier::classify_unit,
+    config::Config,
+    git::parse_diff,
+    output::format_output,
+    types::{AnalysisResult, CodeType, SemanticUnitKind, Summary},
+};
 
 #[test]
 fn test_full_analysis_pipeline() {
@@ -42,8 +43,8 @@ pub fn existing() {
     assert_eq!(diffs.len(), 1);
     assert_eq!(diffs[0].total_added(), 4);
 
-    let changes = map_changes(&diffs, &config, |_| Ok(source.to_string()))
-        .expect("map_changes failed");
+    let changes =
+        map_changes(&diffs, &config, |_| Ok(source.to_string())).expect("map_changes failed");
 
     assert!(!changes.is_empty());
 
@@ -78,8 +79,8 @@ mod tests {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     let config = Config::default();
 
@@ -238,8 +239,8 @@ macro_rules! config_helper {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     let has_struct = units
         .iter()
@@ -300,8 +301,8 @@ pub mod outer {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "outer"));
     assert!(units.iter().any(|u| u.name == "inner"));
@@ -322,8 +323,8 @@ pub async fn fetch_data(url: &str) -> String {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert_eq!(units.len(), 2);
     assert!(units.iter().any(|u| u.name == "async_operation"));
@@ -352,8 +353,8 @@ pub fn process<T: Clone>(item: T) -> T {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     assert!(units.iter().any(|u| u.name == "Container"));
     assert!(units.iter().any(|u| u.name == "new"));
@@ -373,8 +374,8 @@ pub(super) fn super_func() {}
 fn private_func() {}
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     let public = units.iter().find(|u| u.name == "public_func").unwrap();
     assert!(public.visibility.is_public());
@@ -456,8 +457,8 @@ impl Display for Item {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     let trait_impl = units
         .iter()
@@ -482,8 +483,8 @@ pub fn compute() -> i32 {
 }
 "#;
 
-    let units = extract_semantic_units_from_str(code, Path::new("src/lib.rs"))
-        .expect("extraction failed");
+    let units =
+        extract_semantic_units_from_str(code, Path::new("src/lib.rs")).expect("extraction failed");
 
     let config = units.iter().find(|u| u.name == "Config").unwrap();
     assert!(config.has_attribute("derive"));
