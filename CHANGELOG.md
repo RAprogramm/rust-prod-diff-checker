@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Add crates.io and docs.rs badges ([510a122](https://github.com/RAprogramm/rust-prod-diff-checker/commit/510a122d8ed07cdfdc802543d063957c4c62a7c7))
+- Update changelog [skip ci] ([621d6eb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/621d6ebaa13da66d98276e002402d29f72c4d090))
 - Update changelog [skip ci] ([8014b73](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8014b73aa54143144fb72c48f1228256ba8cdd20))
 - Comprehensive README update with detailed explanations ([174960f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/174960f6b05faf923f07e8e655c0211fddf40caa))
 - Update changelog [skip ci] ([aa98a92](https://github.com/RAprogramm/rust-prod-diff-checker/commit/aa98a927d5f1a77e03ea9b8a8275de52605f2121))
