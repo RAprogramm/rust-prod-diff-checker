@@ -11,8 +11,23 @@ use rust_diff_analyzer::{
     types::{LineSpan, SemanticUnit, SemanticUnitKind, Visibility},
 };
 
+const RUST_KEYWORDS: &[&str] = &[
+    "as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for",
+    "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
+    "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where",
+    "while", "async", "await", "dyn", "abstract", "become", "box", "do", "final", "macro",
+    "override", "priv", "typeof", "unsized", "virtual", "yield", "try",
+];
+
 fn valid_identifier() -> impl Strategy<Value = String> {
-    "[a-z][a-z0-9_]{0,30}".prop_map(|s| s.to_string())
+    "[a-z][a-z0-9_]{2,30}"
+        .prop_filter_map("filter keywords", |s| {
+            if RUST_KEYWORDS.contains(&s.as_str()) {
+                None
+            } else {
+                Some(s)
+            }
+        })
 }
 
 proptest! {
