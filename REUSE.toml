@@ -1,0 +1,64 @@
+version = 1
+SPDX-PackageName = "rust-diff-analyzer"
+SPDX-PackageSupplier = "RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/RAprogramm/rust-prod-diff-checker"
+
+[[annotations]]
+path = ["Cargo.toml", "Cargo.lock"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ".rustfmt.toml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ".github/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "action.yml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ".gitignore"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "README.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "cliff.toml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "CHANGELOG.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ".config/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "codecov.yml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 RAprogramm <andrey.rozanov.vl@gmail.com>"
+SPDX-License-Identifier = "MIT"
