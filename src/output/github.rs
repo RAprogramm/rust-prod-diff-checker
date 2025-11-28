@@ -58,7 +58,7 @@ impl Formatter for GithubFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::Summary;
+    use crate::types::{AnalysisScope, Summary};
 
     #[test]
     fn test_github_format() {
@@ -76,6 +76,7 @@ mod tests {
                 weighted_score: 23,
                 exceeds_limit: false,
             },
+            AnalysisScope::new(),
         );
 
         let config = Config::default();

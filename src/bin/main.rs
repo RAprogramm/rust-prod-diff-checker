@@ -111,10 +111,12 @@ fn run() -> Result<(), AppError> {
     let file_diffs = parse_diff(&diff_content)?;
 
     let base_dir = args.base_dir.clone();
-    let changes = map_changes(&file_diffs, &config, |path| {
+    let map_result = map_changes(&file_diffs, &config, |path| {
         let full_path = base_dir.join(path);
         fs::read_to_string(full_path)
     })?;
+    let changes = map_result.changes;
+    let scope = map_result.scope;
 
     let mut summary = Summary::default();
 
@@ -144,7 +146,7 @@ fn run() -> Result<(), AppError> {
             .unwrap_or(false)
         || check_per_type_limits(&changes, &config);
 
-    let result = AnalysisResult::new(changes, summary);
+    let result = AnalysisResult::new(changes, summary, scope);
 
     let output = format_output(&result, &config)?;
     print!("{}", output);

@@ -11,8 +11,16 @@ use crate::{
     config::Config,
     error::FileReadError,
     git::FileDiff,
-    types::{Change, SemanticUnit},
+    types::{AnalysisScope, Change, ExclusionReason, SemanticUnit},
 };
+
+/// Result of mapping changes including scope information
+pub struct MapResult {
+    /// List of changes
+    pub changes: Vec<Change>,
+    /// Analysis scope
+    pub scope: AnalysisScope,
+}
 
 /// Maps diff changes to semantic units
 ///
@@ -24,7 +32,7 @@ use crate::{
 ///
 /// # Returns
 ///
-/// Vector of changes or error
+/// MapResult with changes and scope or error
 ///
 /// # Errors
 ///
@@ -39,26 +47,40 @@ use crate::{
 ///
 /// let diffs = vec![];
 /// let config = Config::default();
-/// let changes = map_changes(&diffs, &config, |p| fs::read_to_string(p));
+/// let result = map_changes(&diffs, &config, |p| fs::read_to_string(p));
 /// ```
 pub fn map_changes<F>(
     diffs: &[FileDiff],
     config: &Config,
     file_reader: F,
-) -> Result<Vec<Change>, AppError>
+) -> Result<MapResult, AppError>
 where
     F: Fn(&Path) -> Result<String, std::io::Error>,
 {
     let mut changes = Vec::new();
+    let mut scope = AnalysisScope::new();
+
+    scope.set_patterns(config.classification.ignore_paths.clone());
 
     for diff in diffs {
         if !diff.is_rust_file() {
+            scope.add_skipped(diff.path.clone(), ExclusionReason::NonRust);
             continue;
         }
 
         if config.should_ignore(&diff.path) {
+            let pattern = config
+                .classification
+                .ignore_paths
+                .iter()
+                .find(|p| diff.path.to_string_lossy().contains(p.as_str()))
+                .cloned()
+                .unwrap_or_default();
+            scope.add_skipped(diff.path.clone(), ExclusionReason::IgnorePattern(pattern));
             continue;
         }
+
+        scope.add_analyzed(diff.path.clone());
 
         let content = file_reader(&diff.path)
             .map_err(|e| AppError::from(FileReadError::new(diff.path.clone(), e)))?;
@@ -72,20 +94,20 @@ where
 
         for line in &added_lines {
             if let Some(unit) = find_containing_unit(&units, *line) {
-                let entry = unit_changes.entry(unit.name.clone()).or_insert((0, 0));
+                let entry = unit_changes.entry(unit.qualified_name()).or_insert((0, 0));
                 entry.0 += 1;
             }
         }
 
         for line in &removed_lines {
             if let Some(unit) = find_containing_unit(&units, *line) {
-                let entry = unit_changes.entry(unit.name.clone()).or_insert((0, 0));
+                let entry = unit_changes.entry(unit.qualified_name()).or_insert((0, 0));
                 entry.1 += 1;
             }
         }
 
         for unit in &units {
-            if let Some((added, removed)) = unit_changes.get(&unit.name) {
+            if let Some((added, removed)) = unit_changes.get(&unit.qualified_name()) {
                 let classification = classify_unit(unit, &diff.path, config);
 
                 changes.push(Change::new(
@@ -99,7 +121,7 @@ where
         }
     }
 
-    Ok(changes)
+    Ok(MapResult { changes, scope })
 }
 
 fn find_containing_unit(units: &[SemanticUnit], line: usize) -> Option<&SemanticUnit> {

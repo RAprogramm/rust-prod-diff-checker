@@ -221,6 +221,8 @@ pub struct SemanticUnit {
     pub kind: SemanticUnitKind,
     /// Name of the unit (function name, struct name, etc.)
     pub name: String,
+    /// Parent impl block name for methods (e.g., "Foo" or "Display for Foo")
+    pub impl_name: Option<String>,
     /// Visibility level
     pub visibility: Visibility,
     /// Line span in source file
@@ -268,9 +270,95 @@ impl SemanticUnit {
         Self {
             kind,
             name,
+            impl_name: None,
             visibility,
             span,
             attributes,
+        }
+    }
+
+    /// Creates a new semantic unit with impl context
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - Kind of semantic unit
+    /// * `name` - Name of the unit
+    /// * `impl_name` - Parent impl block name
+    /// * `visibility` - Visibility level
+    /// * `span` - Line span in source
+    /// * `attributes` - List of attributes
+    ///
+    /// # Returns
+    ///
+    /// A new SemanticUnit instance with impl context
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::types::{LineSpan, SemanticUnit, SemanticUnitKind, Visibility};
+    ///
+    /// let unit = SemanticUnit::with_impl(
+    ///     SemanticUnitKind::Function,
+    ///     "new".to_string(),
+    ///     "Parser".to_string(),
+    ///     Visibility::Public,
+    ///     LineSpan::new(10, 30),
+    ///     vec![],
+    /// );
+    /// assert_eq!(unit.qualified_name(), "Parser::new");
+    /// ```
+    pub fn with_impl(
+        kind: SemanticUnitKind,
+        name: String,
+        impl_name: String,
+        visibility: Visibility,
+        span: LineSpan,
+        attributes: Vec<String>,
+    ) -> Self {
+        Self {
+            kind,
+            name,
+            impl_name: Some(impl_name),
+            visibility,
+            span,
+            attributes,
+        }
+    }
+
+    /// Returns qualified name including impl context if present
+    ///
+    /// # Returns
+    ///
+    /// Qualified name (e.g., "Foo::method" or just "function")
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::types::{LineSpan, SemanticUnit, SemanticUnitKind, Visibility};
+    ///
+    /// let unit = SemanticUnit::with_impl(
+    ///     SemanticUnitKind::Function,
+    ///     "new".to_string(),
+    ///     "Parser".to_string(),
+    ///     Visibility::Public,
+    ///     LineSpan::new(10, 30),
+    ///     vec![],
+    /// );
+    /// assert_eq!(unit.qualified_name(), "Parser::new");
+    ///
+    /// let unit2 = SemanticUnit::new(
+    ///     SemanticUnitKind::Function,
+    ///     "main".to_string(),
+    ///     Visibility::Private,
+    ///     LineSpan::new(1, 5),
+    ///     vec![],
+    /// );
+    /// assert_eq!(unit2.qualified_name(), "main");
+    /// ```
+    pub fn qualified_name(&self) -> String {
+        match &self.impl_name {
+            Some(impl_name) => format!("{}::{}", impl_name, self.name),
+            None => self.name.clone(),
         }
     }
 

@@ -9,7 +9,7 @@ use rust_diff_analyzer::{
     config::Config,
     git::parse_diff,
     output::format_output,
-    types::{AnalysisResult, CodeType, SemanticUnitKind, Summary},
+    types::{AnalysisResult, AnalysisScope, CodeType, SemanticUnitKind, Summary},
 };
 
 #[test]
@@ -43,12 +43,13 @@ pub fn existing() {
     assert_eq!(diffs.len(), 1);
     assert_eq!(diffs[0].total_added(), 4);
 
-    let changes =
+    let result =
         map_changes(&diffs, &config, |_| Ok(source.to_string())).expect("map_changes failed");
 
-    assert!(!changes.is_empty());
+    assert!(!result.changes.is_empty());
 
-    let prod_changes: Vec<_> = changes
+    let prod_changes: Vec<_> = result
+        .changes
         .iter()
         .filter(|c| c.classification.is_production())
         .collect();
@@ -171,6 +172,7 @@ fn test_output_formatting() {
             weighted_score: 15,
             exceeds_limit: false,
         },
+        AnalysisScope::new(),
     );
 
     let config = Config::default();
@@ -433,6 +435,7 @@ fn test_config_limits() {
             weighted_score: 200,
             exceeds_limit: true,
         },
+        AnalysisScope::new(),
     );
 
     assert!(result.summary.exceeds_limit);

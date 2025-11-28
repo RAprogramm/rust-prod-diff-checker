@@ -49,10 +49,10 @@ pub trait Formatter {
 /// use rust_diff_analyzer::{
 ///     config::Config,
 ///     output::format_output,
-///     types::{AnalysisResult, Summary},
+///     types::{AnalysisResult, AnalysisScope, Summary},
 /// };
 ///
-/// let result = AnalysisResult::new(vec![], Summary::default());
+/// let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
 /// let config = Config::default();
 /// let output = format_output(&result, &config).unwrap();
 /// ```

@@ -14,6 +14,7 @@ use crate::types::{LineSpan, SemanticUnit, SemanticUnitKind, Visibility};
 pub struct SemanticUnitVisitor {
     units: Vec<SemanticUnit>,
     in_test_module: bool,
+    current_impl_name: Option<String>,
 }
 
 impl SemanticUnitVisitor {
@@ -34,6 +35,7 @@ impl SemanticUnitVisitor {
         Self {
             units: Vec::new(),
             in_test_module: false,
+            current_impl_name: None,
         }
     }
 
@@ -138,13 +140,23 @@ impl SemanticUnitVisitor {
             attributes.push("test".to_string());
         }
 
-        let unit = SemanticUnit::new(
-            kind,
-            name,
-            visibility,
-            self.span_to_line_span(span),
-            attributes,
-        );
+        let unit = match &self.current_impl_name {
+            Some(impl_name) => SemanticUnit::with_impl(
+                kind,
+                name,
+                impl_name.clone(),
+                visibility,
+                self.span_to_line_span(span),
+                attributes,
+            ),
+            None => SemanticUnit::new(
+                kind,
+                name,
+                visibility,
+                self.span_to_line_span(span),
+                attributes,
+            ),
+        };
         self.units.push(unit);
     }
 }
@@ -201,7 +213,7 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
     }
 
     fn visit_item_impl(&mut self, node: &'ast ItemImpl) {
-        let name = if let Some((_, path, _)) = &node.trait_ {
+        let impl_name = if let Some((_, path, _)) = &node.trait_ {
             format!(
                 "{} for {}",
                 path.segments
@@ -216,11 +228,14 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
 
         self.add_unit(
             SemanticUnitKind::Impl,
-            name,
+            impl_name.clone(),
             Visibility::Private,
             node.span(),
             &node.attrs,
         );
+
+        let previous_impl_name = self.current_impl_name.take();
+        self.current_impl_name = Some(impl_name);
 
         for item in &node.items {
             match item {
@@ -254,6 +269,8 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
                 _ => {}
             }
         }
+
+        self.current_impl_name = previous_impl_name;
     }
 
     fn visit_item_const(&mut self, node: &'ast ItemConst) {

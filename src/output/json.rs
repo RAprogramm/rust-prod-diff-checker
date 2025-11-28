@@ -64,7 +64,7 @@ impl Formatter for JsonFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::Summary;
+    use crate::types::{AnalysisScope, Summary};
 
     #[test]
     fn test_json_format() {
@@ -82,6 +82,7 @@ mod tests {
                 weighted_score: 15,
                 exceeds_limit: false,
             },
+            AnalysisScope::new(),
         );
 
         let config = Config::default();

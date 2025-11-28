@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use super::{classification::CodeType, semantic_unit::SemanticUnit};
+use super::{classification::CodeType, scope::AnalysisScope, semantic_unit::SemanticUnit};
 
 /// A change to a semantic unit
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,6 +182,8 @@ pub struct AnalysisResult {
     pub changes: Vec<Change>,
     /// Aggregated summary
     pub summary: Summary,
+    /// Analysis scope information
+    pub scope: AnalysisScope,
 }
 
 impl AnalysisResult {
@@ -191,6 +193,7 @@ impl AnalysisResult {
     ///
     /// * `changes` - List of changes
     /// * `summary` - Aggregated summary
+    /// * `scope` - Analysis scope information
     ///
     /// # Returns
     ///
@@ -199,13 +202,17 @@ impl AnalysisResult {
     /// # Examples
     ///
     /// ```
-    /// use rust_diff_analyzer::types::{AnalysisResult, Summary};
+    /// use rust_diff_analyzer::types::{AnalysisResult, AnalysisScope, Summary};
     ///
-    /// let result = AnalysisResult::new(vec![], Summary::default());
+    /// let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
     /// assert!(result.changes.is_empty());
     /// ```
-    pub fn new(changes: Vec<Change>, summary: Summary) -> Self {
-        Self { changes, summary }
+    pub fn new(changes: Vec<Change>, summary: Summary, scope: AnalysisScope) -> Self {
+        Self {
+            changes,
+            summary,
+            scope,
+        }
     }
 
     /// Returns only production changes
@@ -217,9 +224,9 @@ impl AnalysisResult {
     /// # Examples
     ///
     /// ```
-    /// use rust_diff_analyzer::types::{AnalysisResult, Summary};
+    /// use rust_diff_analyzer::types::{AnalysisResult, AnalysisScope, Summary};
     ///
-    /// let result = AnalysisResult::new(vec![], Summary::default());
+    /// let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
     /// assert_eq!(result.production_changes().count(), 0);
     /// ```
     pub fn production_changes(&self) -> impl Iterator<Item = &Change> {
@@ -237,9 +244,9 @@ impl AnalysisResult {
     /// # Examples
     ///
     /// ```
-    /// use rust_diff_analyzer::types::{AnalysisResult, Summary};
+    /// use rust_diff_analyzer::types::{AnalysisResult, AnalysisScope, Summary};
     ///
-    /// let result = AnalysisResult::new(vec![], Summary::default());
+    /// let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
     /// assert_eq!(result.test_changes().count(), 0);
     /// ```
     pub fn test_changes(&self) -> impl Iterator<Item = &Change> {

@@ -3,7 +3,7 @@
 
 use crate::{
     config::Config,
-    types::{AnalysisResult, SemanticUnitKind},
+    types::{AnalysisResult, Change, ExclusionReason, SemanticUnitKind},
 };
 
 const COMMENT_MARKER: &str = "<!-- rust-diff-analyzer-comment -->";
@@ -25,10 +25,10 @@ const COMMENT_MARKER: &str = "<!-- rust-diff-analyzer-comment -->";
 /// use rust_diff_analyzer::{
 ///     config::Config,
 ///     output::comment::format_comment,
-///     types::{AnalysisResult, Summary},
+///     types::{AnalysisResult, AnalysisScope, Summary},
 /// };
 ///
-/// let result = AnalysisResult::new(vec![], Summary::default());
+/// let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
 /// let config = Config::default();
 /// let output = format_comment(&result, &config);
 /// assert!(output.contains("Rust Diff Analysis"));
@@ -72,50 +72,33 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     ));
 
     if config.output.include_details && !result.changes.is_empty() {
-        output.push_str("\n<details>\n");
-        output.push_str(&format!(
-            "<summary>Changed units ({})</summary>\n\n",
-            result.changes.len()
-        ));
+        output.push_str("\n### Changed Units\n\n");
 
         let prod_changes: Vec<_> = result.production_changes().collect();
         let test_changes: Vec<_> = result.test_changes().collect();
 
         if !prod_changes.is_empty() {
             output.push_str(&format!("#### Production ({})\n\n", prod_changes.len()));
+            output.push_str("| File | Unit | Type | Changes |\n");
+            output.push_str("|------|------|------|--------|\n");
             for change in prod_changes {
-                let kind = match change.unit.kind {
-                    SemanticUnitKind::Function => "function",
-                    SemanticUnitKind::Struct => "struct",
-                    SemanticUnitKind::Enum => "enum",
-                    SemanticUnitKind::Trait => "trait",
-                    SemanticUnitKind::Impl => "impl",
-                    _ => "other",
-                };
-                output.push_str(&format!(
-                    "- `{}` → `{}` ({})\n",
-                    change.file_path.display(),
-                    change.unit.name,
-                    kind
-                ));
+                output.push_str(&format_change_row(change));
             }
             output.push('\n');
         }
 
         if !test_changes.is_empty() {
             output.push_str(&format!("#### Test ({})\n\n", test_changes.len()));
+            output.push_str("| File | Unit | Type | Changes |\n");
+            output.push_str("|------|------|------|--------|\n");
             for change in test_changes {
-                output.push_str(&format!(
-                    "- `{}` → `{}`\n",
-                    change.file_path.display(),
-                    change.unit.name
-                ));
+                output.push_str(&format_change_row(change));
             }
             output.push('\n');
         }
-
-        output.push_str("</details>\n");
     }
+
+    format_scope_section(&mut output, result);
 
     output.push_str("\n---\n");
     output.push_str(
@@ -123,6 +106,96 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     );
 
     output
+}
+
+fn format_change_row(change: &Change) -> String {
+    let kind = match change.unit.kind {
+        SemanticUnitKind::Function => "function",
+        SemanticUnitKind::Struct => "struct",
+        SemanticUnitKind::Enum => "enum",
+        SemanticUnitKind::Trait => "trait",
+        SemanticUnitKind::Impl => "impl",
+        SemanticUnitKind::Const => "const",
+        SemanticUnitKind::Static => "static",
+        SemanticUnitKind::TypeAlias => "type",
+        SemanticUnitKind::Macro => "macro",
+        SemanticUnitKind::Module => "module",
+    };
+
+    let span = &change.unit.span;
+    let file_with_lines = format!(
+        "`{}:{}-{}`",
+        change.file_path.display(),
+        span.start,
+        span.end
+    );
+
+    let changes = format!("+{} -{}", change.lines_added, change.lines_removed);
+
+    format!(
+        "| {} | `{}` | {} | {} |\n",
+        file_with_lines,
+        change.unit.qualified_name(),
+        kind,
+        changes
+    )
+}
+
+fn format_scope_section(output: &mut String, result: &AnalysisResult) {
+    let scope = &result.scope;
+
+    if scope.analyzed_files.is_empty()
+        && scope.skipped_files.is_empty()
+        && scope.exclusion_patterns.is_empty()
+    {
+        return;
+    }
+
+    output.push_str("\n<details>\n");
+    output.push_str("<summary>Analysis Scope</summary>\n\n");
+
+    if !scope.analyzed_files.is_empty() {
+        output.push_str(&format!(
+            "**Analyzed:** {} Rust files\n\n",
+            scope.analyzed_files.len()
+        ));
+    }
+
+    if !scope.exclusion_patterns.is_empty() {
+        output.push_str("**Excluded patterns:**\n");
+        for pattern in &scope.exclusion_patterns {
+            output.push_str(&format!("- `{}`\n", pattern));
+        }
+        output.push('\n');
+    }
+
+    let non_rust = scope.non_rust_count();
+    let ignored = scope.ignored_count();
+
+    if non_rust > 0 || ignored > 0 {
+        output.push_str("**Skipped files:**\n");
+        if non_rust > 0 {
+            output.push_str(&format!("- {} non-Rust files\n", non_rust));
+        }
+        if ignored > 0 {
+            output.push_str(&format!("- {} files matched ignore patterns\n", ignored));
+        }
+        output.push('\n');
+    }
+
+    if !scope.skipped_files.is_empty() && scope.skipped_files.len() <= 10 {
+        output.push_str("**Skipped file list:**\n");
+        for skipped in &scope.skipped_files {
+            let reason = match &skipped.reason {
+                ExclusionReason::NonRust => "non-Rust".to_string(),
+                ExclusionReason::IgnorePattern(p) => format!("pattern: {}", p),
+            };
+            output.push_str(&format!("- `{}` ({})\n", skipped.path.display(), reason));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("</details>\n");
 }
 
 /// Returns the comment marker for finding existing comments
@@ -146,11 +219,11 @@ pub fn get_comment_marker() -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::Summary;
+    use crate::types::{AnalysisScope, Summary};
 
     #[test]
     fn test_format_comment() {
-        let result = AnalysisResult::new(vec![], Summary::default());
+        let result = AnalysisResult::new(vec![], Summary::default(), AnalysisScope::new());
         let config = Config::default();
         let output = format_comment(&result, &config);
 
@@ -166,7 +239,7 @@ mod tests {
             exceeds_limit: true,
             ..Default::default()
         };
-        let result = AnalysisResult::new(vec![], summary);
+        let result = AnalysisResult::new(vec![], summary, AnalysisScope::new());
         let config = Config::default();
         let output = format_comment(&result, &config);
 
