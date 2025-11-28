@@ -24,7 +24,7 @@ jobs:
 
       - name: Analyze PR diff
         id: diff_analysis
-        uses: RAprogramm/rust-prod-diff-checker@v1
+        uses: ./
         with:
           max_prod_units: '30'
           max_weighted_score: '100'
