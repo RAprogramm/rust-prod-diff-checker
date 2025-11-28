@@ -122,11 +122,10 @@ runs:
           echo "$OUTPUT" >> $GITHUB_OUTPUT
         fi
 
-        if [ "${{ inputs.fail_on_exceed }}" = "true" ]; then
-          if echo "$OUTPUT" | grep -q "exceeds_limit=true"; then
-            echo "::error::Production code changes exceed configured limits"
-            exit 1
-          fi
+        if echo "$OUTPUT" | grep -q "exceeds_limit=true"; then
+          echo "EXCEEDS_LIMIT=true" >> $GITHUB_ENV
+        else
+          echo "EXCEEDS_LIMIT=false" >> $GITHUB_ENV
         fi
 
     - name: Post PR comment
@@ -139,6 +138,10 @@ runs:
         ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
         ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
         ARGS="$ARGS --format comment"
+
+        if [ -n "${{ inputs.max_prod_lines }}" ]; then
+          ARGS="$ARGS --max-lines ${{ inputs.max_prod_lines }}"
+        fi
 
         if [ -n "${{ inputs.config_file }}" ]; then
           ARGS="$ARGS --config ${{ inputs.config_file }}"
@@ -164,3 +167,10 @@ runs:
           gh pr comment $PR_NUMBER --body "$COMMENT"
           echo "Created new comment"
         fi
+
+    - name: Fail if limits exceeded
+      if: env.EXCEEDS_LIMIT == 'true' && inputs.fail_on_exceed == 'true'
+      shell: bash
+      run: |
+        echo "::error::Production code changes exceed configured limits"
+        exit 1

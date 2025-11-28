@@ -61,9 +61,8 @@ jobs:
           fetch-depth: 0
       - uses: ./
         with:
-          max_prod_units: '30'
-          max_weighted_score: '100'
-          fail_on_exceed: 'false'
+          max_prod_lines: '200'
+          fail_on_exceed: 'true'
           post_comment: 'true'
           update_comment: 'true'
 
