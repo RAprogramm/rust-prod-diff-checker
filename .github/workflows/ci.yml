@@ -94,12 +94,13 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: [changes, fmt, clippy]
+    needs: [changes, fmt, clippy, pr-analysis]
     if: |
       always() &&
       (needs.changes.outputs.rust == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.fmt.result == 'success' || needs.fmt.result == 'skipped') &&
-      (needs.clippy.result == 'success' || needs.clippy.result == 'skipped')
+      (needs.clippy.result == 'success' || needs.clippy.result == 'skipped') &&
+      (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -130,12 +131,13 @@ jobs:
   doc:
     name: Documentation
     runs-on: ubuntu-latest
-    needs: [changes, fmt, clippy]
+    needs: [changes, fmt, clippy, pr-analysis]
     if: |
       always() &&
       (needs.changes.outputs.rust == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.fmt.result == 'success' || needs.fmt.result == 'skipped') &&
-      (needs.clippy.result == 'success' || needs.clippy.result == 'skipped')
+      (needs.clippy.result == 'success' || needs.clippy.result == 'skipped') &&
+      (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
