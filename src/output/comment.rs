@@ -83,8 +83,8 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     // Limits section - collapsible
     output.push_str("\n<details>\n");
     output.push_str("<summary><strong>Limits</strong> — configured thresholds for this repository</summary>\n\n");
-    output.push_str("Each metric is compared against its configured maximum. ");
-    output.push_str("If any limit is exceeded, the PR check fails.\n\n");
+    output.push_str("*Each metric is compared against its configured maximum. ");
+    output.push_str("If any limit is exceeded, the PR check fails.*\n\n");
     output.push_str("| Metric | Value | Limit | Status |\n");
     output.push_str("|--------|------:|------:|:------:|\n");
 
@@ -131,7 +131,7 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     // Summary section - collapsible
     output.push_str("\n<details>\n");
     output.push_str("<summary><strong>Summary</strong> — breakdown of changes by category</summary>\n\n");
-    output.push_str("Production code counts toward limits. Test code is tracked but doesn't affect limits.\n\n");
+    output.push_str("*Production code counts toward limits. Test code is tracked but doesn't affect limits.*\n\n");
     output.push_str("| Metric | Production | Test |\n");
     output.push_str("|--------|----------:|-----:|\n");
     output.push_str(&format!("| Functions | {} | - |\n", summary.prod_functions));
@@ -166,7 +166,7 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
                 "<summary><strong>Production Changes</strong> — {} units modified</summary>\n\n",
                 prod_changes.len()
             ));
-            output.push_str("Semantic units (functions, structs, etc.) that were added or modified in production code.\n\n");
+            output.push_str("*Semantic units (functions, structs, etc.) that were added or modified in production code.*\n\n");
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|:----:|--------:|\n");
             for change in prod_changes {
@@ -181,7 +181,7 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
                 "<summary><strong>Test Changes</strong> — {} units modified</summary>\n\n",
                 test_changes.len()
             ));
-            output.push_str("Test code changes don't count toward PR size limits.\n\n");
+            output.push_str("*Test code changes don't count toward PR size limits.*\n\n");
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|:----:|--------:|\n");
             for change in test_changes {
