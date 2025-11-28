@@ -106,29 +106,35 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     output.push_str(&format!("\n**Overall:** {}\n", status));
 
     if config.output.include_details && !result.changes.is_empty() {
-        output.push_str("\n### Changed Units\n\n");
-
         let prod_changes: Vec<_> = result.production_changes().collect();
         let test_changes: Vec<_> = result.test_changes().collect();
 
         if !prod_changes.is_empty() {
-            output.push_str(&format!("#### Production ({})\n\n", prod_changes.len()));
+            output.push_str("\n<details>\n");
+            output.push_str(&format!(
+                "<summary>Production Changes ({})</summary>\n\n",
+                prod_changes.len()
+            ));
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|------|--------|\n");
             for change in prod_changes {
                 output.push_str(&format_change_row(change));
             }
-            output.push('\n');
+            output.push_str("\n</details>\n");
         }
 
         if !test_changes.is_empty() {
-            output.push_str(&format!("#### Test ({})\n\n", test_changes.len()));
+            output.push_str("\n<details>\n");
+            output.push_str(&format!(
+                "<summary>Test Changes ({})</summary>\n\n",
+                test_changes.len()
+            ));
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|------|--------|\n");
             for change in test_changes {
                 output.push_str(&format_change_row(change));
             }
-            output.push('\n');
+            output.push_str("\n</details>\n");
         }
     }
 
