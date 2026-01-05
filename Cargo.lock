@@ -175,9 +175,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.53"
+version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9e340e012a1bf4935f5282ed1436d1489548e8f72308207ea5df0e23d2d03f8"
+checksum = "c6e6ff9dcd79cff5cd969a17a545d79e84ab086e444102a591e288a8aa3ce394"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -185,9 +185,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.53"
+version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d76b5d13eaa18c901fd2f7fca939fefe3a0727a953561fefdf3b2922b8569d00"
+checksum = "fa42cf4d2b7a41bc8f663a7cab4031ebafa1bf3875705bfaf8466dc60ab52c00"
 dependencies = [
  "anstream",
  "anstyle",
@@ -471,14 +471,14 @@ checksum = "df1d3c3b53da64cf5760482273a98e575c651a67eec7f77df96b5b642de8f039"
 
 [[package]]
 name = "masterror"
-version = "0.27.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25adc3a02884d80c5d30b8575bc1329b125d2c9afa36b36eae2968efa27b2186"
+checksum = "270aa96a1d5066f44f38f1ffcc27605c52938bb4e58ba069ccf6f1bdfa31815f"
 dependencies = [
  "http",
  "itoa",
  "masterror-derive",
- "masterror-template 0.4.0",
+ "masterror-template",
  "ryu",
  "serde",
  "sha2",
@@ -488,21 +488,15 @@ dependencies = [
 
 [[package]]
 name = "masterror-derive"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c67cb4a9c7ac7a6473b96e7ed3b72f755809334e1c5c44cf80211358d382d68"
+checksum = "3b9c6baf829af6b18b737fcf732a6cf952ffca52e5bfbb1216a42053827c82d2"
 dependencies = [
- "masterror-template 0.3.8",
+ "masterror-template",
  "proc-macro2",
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "masterror-template"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76cbb19c37caa0e505f0fb43a68184a4d22dc6e81daea40dd00fc24a356ffa9a"
 
 [[package]]
 name = "masterror-template"
@@ -883,9 +877,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"
-version = "2.0.111"
+version = "2.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
+checksum = "678faa00651c9eb72dd2020cbdf275d92eccb2400d568e419efdd64838145cb4"
 dependencies = [
  "proc-macro2",
  "quote",
