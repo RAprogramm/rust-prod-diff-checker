@@ -210,7 +210,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release --all-features
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: rust-diff-analyzer
           path: target/release/rust-diff-analyzer
@@ -375,7 +375,7 @@ jobs:
           cd target/${{ matrix.target }}/release
           Compress-Archive -Path rust-diff-analyzer.exe -DestinationPath ../../../rust-diff-analyzer-${{ matrix.target }}.zip
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: rust-diff-analyzer-${{ matrix.target }}
           path: rust-diff-analyzer-${{ matrix.target }}.${{ matrix.archive }}
@@ -404,7 +404,7 @@ jobs:
         env:
           OUTPUT: RELEASE_NOTES.md
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
 
