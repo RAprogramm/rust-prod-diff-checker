@@ -9,25 +9,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Qualified names for semantic units (e.g., `Parser::new`, `Display for Item::display`)
-- Line ranges in PR comment output showing exact locations (`src/lib.rs:24-38`)
-- Per-unit line change statistics (`+5 -3` for each unit)
-- `AnalysisScope` struct tracking analyzed and skipped files
-- `ExclusionReason` enum for categorizing skipped files (NonRust, IgnorePattern)
-- `qualified_name()` method on `SemanticUnit` for fully qualified names
-- `with_impl()` constructor for creating units with impl context
-- Analysis Scope collapsible section in PR comments
-- `MapResult` struct combining changes and scope from `map_changes()`
-- `--no-fail` CLI flag to prevent exit code 1 when limits exceeded
-- PR size analysis job in CI workflow with automatic PR comments
-- Limits table in PR comments showing individual metric status
+- Add ignored_authors config for filtering commits by author ([faf2b57](https://github.com/RAprogramm/rust-prod-diff-checker/commit/faf2b57cda5322e2404922fa4048af620cede07b))
 
-### Changed
+### CI/CD
 
-- PR comment format now uses tables for changed units
-- `map_changes()` now returns `MapResult` instead of `Vec<Change>`
-- `AnalysisResult::new()` now requires `AnalysisScope` parameter
-- Improved comment output with detailed file paths and line numbers
+- Update dorny/paths-filter to v4 for Node 24 support ([f94e937](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f94e937fd6159f9a94d76aeab7cee7bd22c56b3d))
+- Bump the github-actions group with 2 updates ([275bbca](https://github.com/RAprogramm/rust-prod-diff-checker/commit/275bbca7c2fe7a92e12f0f724c3f509fe285b186))
+- Auto-update major version tag on release ([7fda879](https://github.com/RAprogramm/rust-prod-diff-checker/commit/7fda879ff2a1d172dd9102a81048464c9042cf3d))
+
+### Fixed
+
+- Escape brackets in doc comments for rustdoc ([862d2a1](https://github.com/RAprogramm/rust-prod-diff-checker/commit/862d2a1e1c9c6738b6f3230ce35861d9e34a5f5b))
+
+### Miscellaneous
+
+- Up version in `Cargo.toml` ([26034e0](https://github.com/RAprogramm/rust-prod-diff-checker/commit/26034e05069c913af15da8ada9770678103b4d79))
+- Update dependencies ([8097eaf](https://github.com/RAprogramm/rust-prod-diff-checker/commit/8097eafb98a896f9cb0984b352b281434d3ec598))
+
+### Deps
+
+- Bump the rust-dependencies group with 3 updates ([#24](https://github.com/RAprogramm/rust-prod-diff-checker/issues/24)) ([411bffb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/411bffb6a3125bd5b9ded8c5974b276b683ecc68))
+- Bump clap from 4.5.54 to 4.5.56 in the rust-dependencies group ([#23](https://github.com/RAprogramm/rust-prod-diff-checker/issues/23)) ([57fcb2f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/57fcb2f7d701b9777ce168403d56780c5d8a6c30))
+- Bump the rust-dependencies group with 2 updates ([#22](https://github.com/RAprogramm/rust-prod-diff-checker/issues/22)) ([cbc5043](https://github.com/RAprogramm/rust-prod-diff-checker/commit/cbc5043968ed122b70b9c2e33874858476d6b0cf))
+- Bump the rust-dependencies group with 4 updates ([#21](https://github.com/RAprogramm/rust-prod-diff-checker/issues/21)) ([ca2a737](https://github.com/RAprogramm/rust-prod-diff-checker/commit/ca2a73723d87d45e6bcb026cde004739327dd3d9))
+- Bump the rust-dependencies group with 3 updates ([#20](https://github.com/RAprogramm/rust-prod-diff-checker/issues/20)) ([3c0e349](https://github.com/RAprogramm/rust-prod-diff-checker/commit/3c0e3497ffda1425e1b18eb0cfedf2fdef00f7cd))
+- Bump the rust-dependencies group with 4 updates ([#19](https://github.com/RAprogramm/rust-prod-diff-checker/issues/19)) ([b588114](https://github.com/RAprogramm/rust-prod-diff-checker/commit/b5881146bec09c69960d0a2b7225257ea4fc1b9f))
+- Bump toml in the rust-dependencies group ([#18](https://github.com/RAprogramm/rust-prod-diff-checker/issues/18)) ([c251875](https://github.com/RAprogramm/rust-prod-diff-checker/commit/c25187581cd4869246425660fa74a2eb39123057))
+- Bump criterion from 0.8.0 to 0.8.1 in the rust-dependencies group ([#16](https://github.com/RAprogramm/rust-prod-diff-checker/issues/16)) ([1d23848](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1d23848d912a435d12fb430052786aeb25862bb6))
+- Bump the rust-dependencies group with 2 updates ([#15](https://github.com/RAprogramm/rust-prod-diff-checker/issues/15)) ([34ea316](https://github.com/RAprogramm/rust-prod-diff-checker/commit/34ea316fdb2ac2ea3240221d56e0725a8ed6a49c))
+
+## [1] - 2025-11-28
+
+### Fixed
+
+- **ci**: Check remote tags instead of local in auto-tag job ([6bc07be](https://github.com/RAprogramm/rust-prod-diff-checker/commit/6bc07be4822176ffd2438b7de58819eff7449918))
+
+## [1.2.0] - 2025-11-28
+
+### Added
+
+- Improve CI pipeline and PR comment formatting ([c67eec2](https://github.com/RAprogramm/rust-prod-diff-checker/commit/c67eec2d8119758c75699f3acb2f43dceb5395b0))
+
+### CI/CD
+
+- Bump actions/download-artifact in the github-actions group ([688d68d](https://github.com/RAprogramm/rust-prod-diff-checker/commit/688d68dae792249fe43f4ffbf190ec8a1609606d))
+
+### Documentation
+
+- Add small PR guidelines and Russian translation ([fcd3820](https://github.com/RAprogramm/rust-prod-diff-checker/commit/fcd38205d7d6ad049a49eeb5c23af8f49ccaa010))
+- Update changelog [skip ci] ([58f860f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/58f860f2ff51667d0eb70aee93512ff752386211))
 
 ## [1.1.1] - 2025-11-23
 
@@ -128,6 +158,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
+[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...HEAD
+[1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.2.0...v1
+[1.2.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/RAprogramm/rust-prod-diff-checker/releases/tag/v1.0.0
