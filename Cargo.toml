@@ -1,6 +1,6 @@
 [package]
 name = "rust-diff-analyzer"
-version = "1.4.0"
+version = "1.4.1"
 edition = "2024"
 authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
 description = "Semantic analyzer for Rust PR diffs that distinguishes production code from test code"
