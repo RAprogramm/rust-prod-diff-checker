@@ -88,6 +88,9 @@ rust-diff-analyzer --diff-file changes.diff --max-units 50 --max-score 200 --max
 # Don't exit with code 1 when limits exceeded (useful in scripts)
 rust-diff-analyzer --diff-file changes.diff --no-fail
 
+# Ignore specific authors (comma-separated)
+rust-diff-analyzer --diff-file changes.diff --ignore-authors "dependabot[bot],github-actions[bot]"
+
 # Different output formats
 rust-diff-analyzer --diff-file changes.diff --format json      # Machine-readable JSON
 rust-diff-analyzer --diff-file changes.diff --format human     # Human-readable text
@@ -233,6 +236,8 @@ test_features = ["test-utils", "testing", "mock"]
 test_paths = ["tests/", "benches/", "examples/"]
 # Paths to completely ignore in analysis
 ignore_paths = ["generated/", "vendor/"]
+# Authors to ignore in PR analysis (e.g., dependabot, renovate, github-actions)
+ignored_authors = ["dependabot[bot]", "github-actions[bot]", "renovate[bot]"]
 
 # Weight settings - how much each item type contributes to the score
 [weights]
