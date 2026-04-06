@@ -177,7 +177,7 @@ jobs:
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
       - uses: actions/checkout@v6
-      - uses: rustsec/audit-check@v2
+      - uses: rustsec/audit-check@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
