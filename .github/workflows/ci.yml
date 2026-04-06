@@ -120,19 +120,20 @@ jobs:
       - name: Generate JUnit report
         run: cargo nextest run --all-features --profile ci
         continue-on-error: true
-      - name: Upload coverage to Codecov
+      - name: Upload coverage and test results to Codecov
         if: github.event_name != 'pull_request'
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
           fail_ci_if_error: false
-      - name: Upload test results to Codecov
-        if: github.event_name != 'pull_request' && !cancelled()
-        uses: codecov/test-results-action@v1
+          report_type: test_results
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/nextest/ci/results.junit.xml
+          name: test-results
+          path: target/nextest/ci/results.junit.xml
 
   doc:
     name: Documentation
