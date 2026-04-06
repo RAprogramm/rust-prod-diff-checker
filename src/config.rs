@@ -430,8 +430,8 @@ impl Config {
     /// Checks if a commit should be ignored based on author
     ///
     /// This method checks if the given author matches any of the ignored authors.
-    /// It performs a substring match, so "github-actions[bot]" will match
-    /// "github-actions[bot]" and "github-actions[bot]@users.noreply.github.com".
+    /// It performs a substring match, so "github-actions\[bot]" will match
+    /// "github-actions\[bot]" and "github-actions\[bot]@users.noreply.github.com".
     ///
     /// # Arguments
     ///
@@ -731,7 +731,7 @@ impl ConfigBuilder {
     ///
     /// # Arguments
     ///
-    /// * `author` - Author name to ignore (e.g., "dependabot[bot]")
+    /// * `author` - Author name to ignore (e.g., "dependabot\[bot]")
     ///
     /// # Returns
     ///
