@@ -82,38 +82,37 @@ runs:
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           git fetch origin ${{ github.base_ref }} --depth=1
           
-          # Get list of commits in PR
-          COMMITS=$(git log --format=%H origin/${{ github.base_ref }}..HEAD)
-          
           # Filter commits by author if config has ignored_authors
-          if [ -n "${{ inputs.config_file }}" ] && [ -f "${{ inputs.config_file }}" ]; then
+          if [ -n "${{ inputs.config_file }}" ] && [ -f "${{ github.workspace }}/${{ inputs.config_file }}" ]; then
             # Read ignored_authors from config
-            IGNORED_AUTHORS=$(grep -A 20 '\[classification\]' "${{ inputs.config_file }}" | grep 'ignored_authors' | sed 's/.*= //' | tr -d '[]"' | tr ',' '\n' | tr -d ' ')
+            CONFIG_PATH="${{ github.workspace }}/${{ inputs.config_file }}"
+            IGNORED_AUTHORS=$(grep -A 20 '\[classification\]' "$CONFIG_PATH" | grep 'ignored_authors' | sed 's/.*= //' | tr -d '[]"' | tr ',' '\n' | tr -d ' ')
             
             if [ -n "$IGNORED_AUTHORS" ]; then
-              FILTERED_COMMITS=""
-              for commit in $COMMITS; do
+              # Get the first commit that is NOT from ignored authors
+              FIRST_VALID=""
+              for commit in $(git log --format=%H origin/${{ github.base_ref }}..HEAD); do
                 author=$(git log -1 --format=%ae "$commit")
                 ignored=false
                 for ignored_author in $IGNORED_AUTHORS; do
                   if echo "$author" | grep -q "$ignored_author"; then
                     ignored=true
-                    break
                   fi
                 done
                 if [ "$ignored" = "false" ]; then
-                  FILTERED_COMMITS="$FILTERED_COMMITS $commit"
+                  FIRST_VALID="$commit"
+                  break
                 fi
               done
               
-              if [ -z "$FILTERED_COMMITS" ]; then
+              if [ -z "$FIRST_VALID" ]; then
                 echo "All commits are from ignored authors - skipping analysis"
                 echo "SKIP_ANALYSIS=true" >> $GITHUB_ENV
                 exit 0
               fi
               
-              echo "Analyzing $(echo $FILTERED_COMMITS | wc -w) non-ignored commits"
-              git diff origin/${{ github.base_ref }} $FILTERED_COMMITS > /tmp/pr_diff.txt
+              echo "Analyzing from commit $FIRST_VALID onwards"
+              git diff origin/${{ github.base_ref }}...$FIRST_VALID > /tmp/pr_diff.txt
             else
               git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
             fi
