@@ -7,15 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### CI/CD
+
+- Revert rustsec to v2 with Node 24 opt-in ([fcf8a1d](https://github.com/RAprogramm/rust-prod-diff-checker/commit/fcf8a1db4eee47ad58986cc1f269e8326065a31a))
+
+### Miscellaneous
+
+- Up version in `Cargo.toml` ([9f9de21](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9f9de216b8244f66f48a64c79255cb24a2d81e84))
+
+### Merge
+
+- From remote ([58388c5](https://github.com/RAprogramm/rust-prod-diff-checker/commit/58388c52295bbbf5eef942e03ed4179a688b63e0))
+
+## [1.4.0] - 2026-04-06
+
+### CI/CD
+
+- Update rustsec to v3 and dependabot to v2.2 ([4b742d0](https://github.com/RAprogramm/rust-prod-diff-checker/commit/4b742d08b7dac666c29919a4004d4d1f21e5c0b5))
+- Update codecov test-results to v2 and use report_type for unified upload ([3ecbe6e](https://github.com/RAprogramm/rust-prod-diff-checker/commit/3ecbe6e80b8f63d2b05383cc481b732c3734316a))
+
+### Miscellaneous
+
+- Up version in `Cargo.toml` ([f2fd0a1](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f2fd0a1051890473137cb8d8d8308733b3f111e1))
+
+## [1.3.0] - 2026-04-06
+
 ### Added
 
 - Add ignored_authors config for filtering commits by author ([faf2b57](https://github.com/RAprogramm/rust-prod-diff-checker/commit/faf2b57cda5322e2404922fa4048af620cede07b))
 
 ### CI/CD
 
+- Update GitHub Actions to latest versions ([fd69600](https://github.com/RAprogramm/rust-prod-diff-checker/commit/fd69600d094206142f0cde6f7f56b2149f0f7c64))
 - Update dorny/paths-filter to v4 for Node 24 support ([f94e937](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f94e937fd6159f9a94d76aeab7cee7bd22c56b3d))
 - Bump the github-actions group with 2 updates ([275bbca](https://github.com/RAprogramm/rust-prod-diff-checker/commit/275bbca7c2fe7a92e12f0f724c3f509fe285b186))
 - Auto-update major version tag on release ([7fda879](https://github.com/RAprogramm/rust-prod-diff-checker/commit/7fda879ff2a1d172dd9102a81048464c9042cf3d))
+
+### Documentation
+
+- Update changelog [skip ci] ([2a4521e](https://github.com/RAprogramm/rust-prod-diff-checker/commit/2a4521e74a45ff9e2e3f9be82a16d235b20998c8))
 
 ### Fixed
 
@@ -158,7 +188,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
-[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...HEAD
+[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...v1.3.0
 [1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.2.0...v1
 [1.2.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.0...v1.1.1
