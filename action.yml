@@ -81,7 +81,45 @@ runs:
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           git fetch origin ${{ github.base_ref }} --depth=1
-          git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
+          
+          # Get list of commits in PR
+          COMMITS=$(git log --format=%H origin/${{ github.base_ref }}..HEAD)
+          
+          # Filter commits by author if config has ignored_authors
+          if [ -n "${{ inputs.config_file }}" ] && [ -f "${{ inputs.config_file }}" ]; then
+            # Read ignored_authors from config
+            IGNORED_AUTHORS=$(grep -A 20 '\[classification\]' "${{ inputs.config_file }}" | grep 'ignored_authors' | sed 's/.*= //' | tr -d '[]"' | tr ',' '\n' | tr -d ' ')
+            
+            if [ -n "$IGNORED_AUTHORS" ]; then
+              FILTERED_COMMITS=""
+              for commit in $COMMITS; do
+                author=$(git log -1 --format=%ae "$commit")
+                ignored=false
+                for ignored_author in $IGNORED_AUTHORS; do
+                  if echo "$author" | grep -q "$ignored_author"; then
+                    ignored=true
+                    break
+                  fi
+                done
+                if [ "$ignored" = "false" ]; then
+                  FILTERED_COMMITS="$FILTERED_COMMITS $commit"
+                fi
+              done
+              
+              if [ -z "$FILTERED_COMMITS" ]; then
+                echo "All commits are from ignored authors - skipping analysis"
+                echo "SKIP_ANALYSIS=true" >> $GITHUB_ENV
+                exit 0
+              fi
+              
+              echo "Analyzing $(echo $FILTERED_COMMITS | wc -w) non-ignored commits"
+              git diff origin/${{ github.base_ref }} $FILTERED_COMMITS > /tmp/pr_diff.txt
+            else
+              git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
+            fi
+          else
+            git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
+          fi
         else
           git diff HEAD~1 > /tmp/pr_diff.txt
         fi
@@ -101,6 +139,23 @@ runs:
       id: analyze
       shell: bash
       run: |
+        # Skip analysis if all commits are from ignored authors
+        if [ "${{ env.SKIP_ANALYSIS }}" = "true" ]; then
+          echo "Skipping analysis - all commits from ignored authors"
+          echo "prod_functions_changed=0" >> $GITHUB_OUTPUT
+          echo "prod_structs_changed=0" >> $GITHUB_OUTPUT
+          echo "prod_other_changed=0" >> $GITHUB_OUTPUT
+          echo "test_units_changed=0" >> $GITHUB_OUTPUT
+          echo "prod_lines_added=0" >> $GITHUB_OUTPUT
+          echo "prod_lines_removed=0" >> $GITHUB_OUTPUT
+          echo "test_lines_added=0" >> $GITHUB_OUTPUT
+          echo "test_lines_removed=0" >> $GITHUB_OUTPUT
+          echo "weighted_score=0" >> $GITHUB_OUTPUT
+          echo "exceeds_limit=false" >> $GITHUB_OUTPUT
+          echo "EXCEEDS_LIMIT=false" >> $GITHUB_ENV
+          exit 0
+        fi
+        
         ARGS="--diff-file /tmp/pr_diff.txt"
         ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
         ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
