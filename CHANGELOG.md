@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **action**: Filter commits by author from config before analysis ([3a78625](https://github.com/RAprogramm/rust-prod-diff-checker/commit/3a786258773523f22482d5888fc7ea08f5f4b5ed))
+
+### Documentation
+
+- Add ignored_authors to README documentation ([f21551d](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f21551db608f7b86965c59a72afbaa63bc82f604))
+- Update changelog [skip ci] ([9decfdb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9decfdb8badea92324229bd47de046b0efaa159b))
+
+### Fixed
+
+- Filter commits by author in GitHub Action ([7fa1c89](https://github.com/RAprogramm/rust-prod-diff-checker/commit/7fa1c89b69ab6c6ca174d06f3f53db4d216c8be6))
+
+## [1.4.1] - 2026-04-06
+
 ### CI/CD
 
 - Revert rustsec to v2 with Node 24 opt-in ([fcf8a1d](https://github.com/RAprogramm/rust-prod-diff-checker/commit/fcf8a1db4eee47ad58986cc1f269e8326065a31a))
@@ -50,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Escape brackets in doc comments for rustdoc ([862d2a1](https://github.com/RAprogramm/rust-prod-diff-checker/commit/862d2a1e1c9c6738b6f3230ce35861d9e34a5f5b))
+- **ci**: Check remote tags instead of local in auto-tag job ([6bc07be](https://github.com/RAprogramm/rust-prod-diff-checker/commit/6bc07be4822176ffd2438b7de58819eff7449918))
 
 ### Miscellaneous
 
@@ -67,12 +83,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump toml in the rust-dependencies group ([#18](https://github.com/RAprogramm/rust-prod-diff-checker/issues/18)) ([c251875](https://github.com/RAprogramm/rust-prod-diff-checker/commit/c25187581cd4869246425660fa74a2eb39123057))
 - Bump criterion from 0.8.0 to 0.8.1 in the rust-dependencies group ([#16](https://github.com/RAprogramm/rust-prod-diff-checker/issues/16)) ([1d23848](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1d23848d912a435d12fb430052786aeb25862bb6))
 - Bump the rust-dependencies group with 2 updates ([#15](https://github.com/RAprogramm/rust-prod-diff-checker/issues/15)) ([34ea316](https://github.com/RAprogramm/rust-prod-diff-checker/commit/34ea316fdb2ac2ea3240221d56e0725a8ed6a49c))
-
-## [1] - 2025-11-28
-
-### Fixed
-
-- **ci**: Check remote tags instead of local in auto-tag job ([6bc07be](https://github.com/RAprogramm/rust-prod-diff-checker/commit/6bc07be4822176ffd2438b7de58819eff7449918))
 
 ## [1.2.0] - 2025-11-28
 
@@ -188,10 +198,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
-[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1...v1.3.0
-[1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.2.0...v1
+[1.3.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.0.0...v1.1.0
