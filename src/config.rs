@@ -20,6 +20,19 @@ pub struct ClassificationConfig {
     /// Paths to ignore completely
     #[serde(default)]
     pub ignore_paths: Vec<String>,
+    /// Authors to ignore when analyzing changes
+    ///
+    /// Changes from these authors will be excluded from the analysis.
+    /// Useful for filtering out automated commits (e.g., dependabot, renovate).
+    ///
+    /// # Examples
+    ///
+    /// ```toml
+    /// [classification]
+    /// ignored_authors = ["dependabot[bot]", "github-actions[bot]"]
+    /// ```
+    #[serde(default)]
+    pub ignored_authors: Vec<String>,
 }
 
 impl Default for ClassificationConfig {
@@ -28,6 +41,7 @@ impl Default for ClassificationConfig {
             test_features: default_test_features(),
             test_paths: default_test_paths(),
             ignore_paths: Vec::new(),
+            ignored_authors: Vec::new(),
         }
     }
 }
@@ -310,6 +324,25 @@ impl Config {
             .into());
         }
 
+        // Validate ignored_authors - check for duplicates
+        let mut seen = std::collections::HashSet::new();
+        for author in &self.classification.ignored_authors {
+            if author.is_empty() {
+                return Err(ConfigValidationError {
+                    field: "classification.ignored_authors".to_string(),
+                    message: "author cannot be empty".to_string(),
+                }
+                .into());
+            }
+            if !seen.insert(author) {
+                return Err(ConfigValidationError {
+                    field: "classification.ignored_authors".to_string(),
+                    message: format!("duplicate author: {}", author),
+                }
+                .into());
+            }
+        }
+
         Ok(())
     }
 
@@ -362,6 +395,66 @@ impl Config {
             .ignore_paths
             .iter()
             .any(|p| path_str.contains(p))
+    }
+
+    /// Checks if an author should be ignored
+    ///
+    /// # Arguments
+    ///
+    /// * `author` - Author name to check
+    ///
+    /// # Returns
+    ///
+    /// `true` if author is in the ignore list
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::Config;
+    ///
+    /// let mut config = Config::default();
+    /// config
+    ///     .classification
+    ///     .ignored_authors
+    ///     .push("dependabot[bot]".to_string());
+    /// assert!(config.should_ignore_author("dependabot[bot]"));
+    /// assert!(!config.should_ignore_author("developer"));
+    /// ```
+    pub fn should_ignore_author(&self, author: &str) -> bool {
+        self.classification
+            .ignored_authors
+            .iter()
+            .any(|ignored| author.contains(ignored) || ignored == author)
+    }
+
+    /// Checks if a commit should be ignored based on author
+    ///
+    /// This method checks if the given author matches any of the ignored authors.
+    /// It performs a substring match, so "github-actions[bot]" will match
+    /// "github-actions[bot]" and "github-actions[bot]@users.noreply.github.com".
+    ///
+    /// # Arguments
+    ///
+    /// * `author` - Author string from git commit
+    ///
+    /// # Returns
+    ///
+    /// `true` if the commit author should be ignored
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::Config;
+    ///
+    /// let mut config = Config::default();
+    /// config
+    ///     .classification
+    ///     .ignored_authors
+    ///     .push("dependabot".to_string());
+    /// assert!(config.should_ignore_author("dependabot[bot]"));
+    /// ```
+    pub fn should_ignore_commit(&self, author: &str) -> bool {
+        self.should_ignore_author(author)
     }
 
     /// Checks if a path is in a test directory
@@ -631,6 +724,33 @@ impl ConfigBuilder {
             .classification
             .ignore_paths
             .push(path.to_string());
+        self
+    }
+
+    /// Adds an author to ignore
+    ///
+    /// # Arguments
+    ///
+    /// * `author` - Author name to ignore (e.g., "dependabot[bot]")
+    ///
+    /// # Returns
+    ///
+    /// Self for method chaining
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::config::ConfigBuilder;
+    ///
+    /// let config = ConfigBuilder::new()
+    ///     .add_ignored_author("dependabot[bot]")
+    ///     .build();
+    /// ```
+    pub fn add_ignored_author(mut self, author: &str) -> Self {
+        self.config
+            .classification
+            .ignored_authors
+            .push(author.to_string());
         self
     }
 

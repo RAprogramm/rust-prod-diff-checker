@@ -56,6 +56,13 @@ struct Args {
     /// Don't exit with code 1 when limits are exceeded
     #[arg(long)]
     no_fail: bool,
+
+    /// Authors to ignore (comma-separated list)
+    ///
+    /// Changes from these authors will be excluded from analysis.
+    /// Example: --ignore-authors "dependabot[bot],github-actions[bot]"
+    #[arg(long, value_delimiter = ',')]
+    ignore_authors: Option<Vec<String>>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]
@@ -106,6 +113,11 @@ fn run() -> Result<(), AppError> {
 
     if let Some(max_lines) = args.max_lines {
         config.limits.max_prod_lines = Some(max_lines);
+    }
+
+    // Apply CLI ignore_authors (overrides config file)
+    if let Some(authors) = args.ignore_authors {
+        config.classification.ignored_authors = authors;
     }
 
     config.validate()?;
