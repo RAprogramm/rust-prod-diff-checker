@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Miscellaneous
+
+- Bump version to 1.6.0 ([569dcc3](https://github.com/RAprogramm/rust-prod-diff-checker/commit/569dcc312bb7230efda2ee5ec9815c55f6f03b31))
+
+## [1.5.0] - 2026-04-06
+
 ### Added
 
 - **action**: Filter commits by author from config before analysis ([3a78625](https://github.com/RAprogramm/rust-prod-diff-checker/commit/3a786258773523f22482d5888fc7ea08f5f4b5ed))
 
 ### Documentation
 
+- Update changelog [skip ci] ([f50b84b](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f50b84b43824119e7b36bb0c3e93a57d312d0afb))
 - Add ignored_authors to README documentation ([f21551d](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f21551db608f7b86965c59a72afbaa63bc82f604))
 - Update changelog [skip ci] ([9decfdb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/9decfdb8badea92324229bd47de046b0efaa159b))
 
@@ -198,7 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Filter Rust keywords in property tests ([1ee0fcc](https://github.com/RAprogramm/rust-prod-diff-checker/commit/1ee0fcca334e6cc4077b93a47ba453b6c0cab6cf))
 
-[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/RAprogramm/rust-prod-diff-checker/compare/v1.2.0...v1.3.0
