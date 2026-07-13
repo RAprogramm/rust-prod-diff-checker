@@ -1,4 +1,6 @@
-# Rust Diff Analyzer
+<div align="center">
+  <img src=".github/assets/banner.png" alt="Rust Diff Analyzer" width="100%">
+</div>
 
 [![CI](https://github.com/RAprogramm/rust-prod-diff-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/rust-prod-diff-checker/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/RAprogramm/rust-prod-diff-checker)](https://github.com/RAprogramm/rust-prod-diff-checker/releases/latest)
