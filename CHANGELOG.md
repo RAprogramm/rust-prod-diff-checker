@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### CI/CD
+
+- Bump the github-actions group with 2 updates ([08d8511](https://github.com/RAprogramm/rust-prod-diff-checker/commit/08d851152060078ab20286f4606b6f0638e0478a))
+
+### Documentation
+
+- Update changelog [skip ci] ([f96cddb](https://github.com/RAprogramm/rust-prod-diff-checker/commit/f96cddbfe5212a2e54d6c201117aeaa818605a9c))
+
 ### Miscellaneous
 
+- Bump masterror to 0.29 ([afba0e7](https://github.com/RAprogramm/rust-prod-diff-checker/commit/afba0e79b1e32c7970b94348d2afb1bed11a49b3))
 - Bump version to 1.6.0 ([569dcc3](https://github.com/RAprogramm/rust-prod-diff-checker/commit/569dcc312bb7230efda2ee5ec9815c55f6f03b31))
+
+### Deps
+
+- Bump syn from 2.0.117 to 2.0.118 in the rust-dependencies group ([#37](https://github.com/RAprogramm/rust-prod-diff-checker/issues/37)) ([29b305f](https://github.com/RAprogramm/rust-prod-diff-checker/commit/29b305f91e386dd37af1551a04c9aa555ebc8cef))
+- Bump the rust-dependencies group with 2 updates ([#35](https://github.com/RAprogramm/rust-prod-diff-checker/issues/35)) ([08a06dd](https://github.com/RAprogramm/rust-prod-diff-checker/commit/08a06dd0084fabbeca9aa2da88a9c342ff11cb31))
+- Bump the rust-dependencies group across 1 directory with 2 updates ([#34](https://github.com/RAprogramm/rust-prod-diff-checker/issues/34)) ([40efc9b](https://github.com/RAprogramm/rust-prod-diff-checker/commit/40efc9be3df8af8d94e4531b4244cbd027e3904f))
 
 ## [1.5.0] - 2026-04-06
 
