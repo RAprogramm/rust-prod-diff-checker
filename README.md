@@ -90,8 +90,8 @@ rust-diff-analyzer --diff-file changes.diff --max-units 50 --max-score 200 --max
 # Don't exit with code 1 when limits exceeded (useful in scripts)
 rust-diff-analyzer --diff-file changes.diff --no-fail
 
-# Ignore specific authors (comma-separated)
-rust-diff-analyzer --diff-file changes.diff --ignore-authors "dependabot[bot],github-actions[bot]"
+# Author filtering (ignored_authors) is applied by the GitHub Action,
+# which skips analysis when every PR commit comes from an ignored author.
 
 # Different output formats
 rust-diff-analyzer --diff-file changes.diff --format json      # Machine-readable JSON

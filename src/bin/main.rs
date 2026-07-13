@@ -3,7 +3,7 @@
 
 use std::{
     fs,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     process,
 };
@@ -56,13 +56,6 @@ struct Args {
     /// Don't exit with code 1 when limits are exceeded
     #[arg(long)]
     no_fail: bool,
-
-    /// Authors to ignore (comma-separated list)
-    ///
-    /// Changes from these authors will be excluded from analysis.
-    /// Example: --ignore-authors "dependabot[bot],github-actions[bot]"
-    #[arg(long, value_delimiter = ',')]
-    ignore_authors: Option<Vec<String>>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]
@@ -115,11 +108,6 @@ fn run() -> Result<(), AppError> {
         config.limits.max_prod_lines = Some(max_lines);
     }
 
-    // Apply CLI ignore_authors (overrides config file)
-    if let Some(authors) = args.ignore_authors {
-        config.classification.ignored_authors = authors;
-    }
-
     config.validate()?;
 
     let diff_content = read_diff(&args.diff_file)?;
@@ -166,6 +154,9 @@ fn run() -> Result<(), AppError> {
 
     let output = format_output(&result, &config)?;
     print!("{}", output);
+    io::stdout()
+        .flush()
+        .map_err(|e| AppError::from(rust_diff_analyzer::error::IoError(e)))?;
 
     if result.summary.exceeds_limit && config.limits.fail_on_exceed && !args.no_fail {
         process::exit(1);
@@ -174,17 +165,21 @@ fn run() -> Result<(), AppError> {
     Ok(())
 }
 
+/// Reads the diff as bytes and converts lossily to UTF-8
+///
+/// `git diff` embeds raw file content, so a single non-UTF-8 line (e.g. a
+/// Latin-1 fixture) must not abort the whole analysis.
 fn read_diff(path: &Option<PathBuf>) -> Result<String, AppError> {
     match path {
-        Some(p) => {
-            fs::read_to_string(p).map_err(|e| AppError::from(FileReadError::new(p.clone(), e)))
-        }
+        Some(p) => fs::read(p)
+            .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+            .map_err(|e| AppError::from(FileReadError::new(p.clone(), e))),
         None => {
-            let mut buffer = String::new();
+            let mut buffer = Vec::new();
             io::stdin()
-                .read_to_string(&mut buffer)
+                .read_to_end(&mut buffer)
                 .map_err(|e| AppError::from(rust_diff_analyzer::error::IoError(e)))?;
-            Ok(buffer)
+            Ok(String::from_utf8_lossy(&buffer).into_owned())
         }
     }
 }
