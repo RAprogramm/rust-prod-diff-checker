@@ -78,49 +78,78 @@ runs:
     - name: Get PR diff
       id: get_diff
       shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        BASE_REF: ${{ github.base_ref }}
+        CONFIG_FILE: ${{ inputs.config_file }}
+        WORKSPACE: ${{ github.workspace }}
       run: |
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          git fetch origin ${{ github.base_ref }} --depth=1
-          
-          # Filter commits by author if config has ignored_authors
-          if [ -n "${{ inputs.config_file }}" ] && [ -f "${{ github.workspace }}/${{ inputs.config_file }}" ]; then
-            # Read ignored_authors from config
-            CONFIG_PATH="${{ github.workspace }}/${{ inputs.config_file }}"
-            IGNORED_AUTHORS=$(grep -A 20 '\[classification\]' "$CONFIG_PATH" | grep 'ignored_authors' | sed 's/.*= //' | tr -d '[]"' | tr ',' '\n' | tr -d ' ')
-            
-            if [ -n "$IGNORED_AUTHORS" ]; then
-              # Get the first commit that is NOT from ignored authors
-              FIRST_VALID=""
-              for commit in $(git log --format=%H origin/${{ github.base_ref }}..HEAD); do
-                author=$(git log -1 --format=%ae "$commit")
-                ignored=false
-                for ignored_author in $IGNORED_AUTHORS; do
-                  if echo "$author" | grep -q "$ignored_author"; then
-                    ignored=true
-                  fi
-                done
-                if [ "$ignored" = "false" ]; then
-                  FIRST_VALID="$commit"
-                  break
-                fi
-              done
-              
-              if [ -z "$FIRST_VALID" ]; then
-                echo "All commits are from ignored authors - skipping analysis"
-                echo "SKIP_ANALYSIS=true" >> $GITHUB_ENV
-                exit 0
-              fi
-              
-              echo "Analyzing from commit $FIRST_VALID onwards"
-              git diff origin/${{ github.base_ref }}...$FIRST_VALID > /tmp/pr_diff.txt
-            else
-              git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
+        if [ "$EVENT_NAME" = "pull_request" ]; then
+          git fetch --no-tags origin "$BASE_REF"
+
+          # Shallow checkouts have no merge base for the three-dot diff
+          if ! git merge-base "origin/$BASE_REF" HEAD >/dev/null 2>&1; then
+            if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
+              git fetch --unshallow --no-tags origin "$BASE_REF" || true
+              git fetch --unshallow --no-tags origin || true
             fi
-          else
-            git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr_diff.txt
+            git merge-base "origin/$BASE_REF" HEAD >/dev/null
           fi
+
+          # Skip analysis entirely when every commit in the range comes from
+          # an ignored author (e.g. a dependabot-only PR). Mixed PRs are
+          # analyzed in full: a single range cut point cannot correctly
+          # exclude interleaved bot commits.
+          IGNORED_AUTHORS=""
+          if [ -n "$CONFIG_FILE" ] && [ -f "$WORKSPACE/$CONFIG_FILE" ]; then
+            IGNORED_AUTHORS=$(awk '
+              /^[[:space:]]*\[[a-z]/ { in_section = ($0 ~ /^\[classification\]/) }
+              in_section && /^[[:space:]]*ignored_authors[[:space:]]*=/ { capture = 1 }
+              capture {
+                line = $0
+                sub(/#.*$/, "", line)
+                buffer = buffer line
+                if (line ~ /\][[:space:]]*$/) { capture = 0; print buffer; buffer = "" }
+              }
+            ' "$WORKSPACE/$CONFIG_FILE" | { grep -o '"[^"]*"' || true; } | tr -d '"')
+          fi
+
+          if [ -n "$IGNORED_AUTHORS" ]; then
+            ALL_IGNORED=true
+            HAS_COMMITS=false
+            while read -r author; do
+              [ -n "$author" ] || continue
+              HAS_COMMITS=true
+              ignored=false
+              while read -r ignored_author; do
+                [ -n "$ignored_author" ] || continue
+                case "$author" in
+                  *"$ignored_author"*) ignored=true ;;
+                esac
+              done <<< "$IGNORED_AUTHORS"
+              if [ "$ignored" = "false" ]; then
+                ALL_IGNORED=false
+                break
+              fi
+            done < <(git log --format=%ae "origin/$BASE_REF..HEAD")
+
+            if [ "$HAS_COMMITS" = "true" ] && [ "$ALL_IGNORED" = "true" ]; then
+              echo "All commits are from ignored authors - skipping analysis"
+              echo "SKIP_ANALYSIS=true" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          fi
+
+          git diff "origin/$BASE_REF...HEAD" > /tmp/pr_diff.txt
         else
-          git diff HEAD~1 > /tmp/pr_diff.txt
+          if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
+            git fetch --deepen=1 --no-tags origin || true
+          fi
+          if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+            git diff HEAD~1 > /tmp/pr_diff.txt
+          else
+            : > /tmp/pr_diff.txt
+          fi
         fi
 
     - name: Setup Rust
@@ -137,50 +166,61 @@ runs:
     - name: Run analysis
       id: analyze
       shell: bash
+      env:
+        MAX_PROD_UNITS: ${{ inputs.max_prod_units }}
+        MAX_WEIGHTED_SCORE: ${{ inputs.max_weighted_score }}
+        MAX_PROD_LINES: ${{ inputs.max_prod_lines }}
+        OUTPUT_FORMAT: ${{ inputs.output_format }}
+        CONFIG_FILE: ${{ inputs.config_file }}
+        ACTION_PATH: ${{ github.action_path }}
       run: |
         # Skip analysis if all commits are from ignored authors
-        if [ "${{ env.SKIP_ANALYSIS }}" = "true" ]; then
+        if [ "$SKIP_ANALYSIS" = "true" ]; then
           echo "Skipping analysis - all commits from ignored authors"
-          echo "prod_functions_changed=0" >> $GITHUB_OUTPUT
-          echo "prod_structs_changed=0" >> $GITHUB_OUTPUT
-          echo "prod_other_changed=0" >> $GITHUB_OUTPUT
-          echo "test_units_changed=0" >> $GITHUB_OUTPUT
-          echo "prod_lines_added=0" >> $GITHUB_OUTPUT
-          echo "prod_lines_removed=0" >> $GITHUB_OUTPUT
-          echo "test_lines_added=0" >> $GITHUB_OUTPUT
-          echo "test_lines_removed=0" >> $GITHUB_OUTPUT
-          echo "weighted_score=0" >> $GITHUB_OUTPUT
-          echo "exceeds_limit=false" >> $GITHUB_OUTPUT
-          echo "EXCEEDS_LIMIT=false" >> $GITHUB_ENV
+          echo "prod_functions_changed=0" >> "$GITHUB_OUTPUT"
+          echo "prod_structs_changed=0" >> "$GITHUB_OUTPUT"
+          echo "prod_other_changed=0" >> "$GITHUB_OUTPUT"
+          echo "test_units_changed=0" >> "$GITHUB_OUTPUT"
+          echo "prod_lines_added=0" >> "$GITHUB_OUTPUT"
+          echo "prod_lines_removed=0" >> "$GITHUB_OUTPUT"
+          echo "test_lines_added=0" >> "$GITHUB_OUTPUT"
+          echo "test_lines_removed=0" >> "$GITHUB_OUTPUT"
+          echo "weighted_score=0" >> "$GITHUB_OUTPUT"
+          echo "exceeds_limit=false" >> "$GITHUB_OUTPUT"
+          echo "EXCEEDS_LIMIT=false" >> "$GITHUB_ENV"
           exit 0
         fi
-        
-        ARGS="--diff-file /tmp/pr_diff.txt"
-        ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
-        ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
-        ARGS="$ARGS --format ${{ inputs.output_format }}"
-        ARGS="$ARGS --no-fail"
 
-        if [ -n "${{ inputs.max_prod_lines }}" ]; then
-          ARGS="$ARGS --max-lines ${{ inputs.max_prod_lines }}"
+        ARGS=(--diff-file /tmp/pr_diff.txt)
+        ARGS+=(--max-units "$MAX_PROD_UNITS")
+        ARGS+=(--max-score "$MAX_WEIGHTED_SCORE")
+        ARGS+=(--no-fail)
+
+        if [ -n "$MAX_PROD_LINES" ]; then
+          ARGS+=(--max-lines "$MAX_PROD_LINES")
         fi
 
-        if [ -n "${{ inputs.config_file }}" ]; then
-          ARGS="$ARGS --config ${{ inputs.config_file }}"
+        if [ -n "$CONFIG_FILE" ]; then
+          ARGS+=(--config "$CONFIG_FILE")
         fi
 
-        OUTPUT=$(${{ github.action_path }}/target/release/rust-diff-analyzer $ARGS)
+        BINARY="$ACTION_PATH/target/release/rust-diff-analyzer"
 
-        echo "$OUTPUT"
+        # Always run the github format once: it feeds step outputs and the
+        # exceeds_limit detection regardless of the user-facing format.
+        GITHUB_FORMAT_OUTPUT=$("$BINARY" "${ARGS[@]}" --format github)
+        echo "$GITHUB_FORMAT_OUTPUT" >> "$GITHUB_OUTPUT"
 
-        if [ "${{ inputs.output_format }}" = "github" ]; then
-          echo "$OUTPUT" >> $GITHUB_OUTPUT
-        fi
-
-        if echo "$OUTPUT" | grep -q "exceeds_limit=true"; then
-          echo "EXCEEDS_LIMIT=true" >> $GITHUB_ENV
+        if [ "$OUTPUT_FORMAT" = "github" ]; then
+          echo "$GITHUB_FORMAT_OUTPUT"
         else
-          echo "EXCEEDS_LIMIT=false" >> $GITHUB_ENV
+          "$BINARY" "${ARGS[@]}" --format "$OUTPUT_FORMAT"
+        fi
+
+        if echo "$GITHUB_FORMAT_OUTPUT" | grep -q "exceeds_limit=true"; then
+          echo "EXCEEDS_LIMIT=true" >> "$GITHUB_ENV"
+        else
+          echo "EXCEEDS_LIMIT=false" >> "$GITHUB_ENV"
         fi
 
     - name: Post PR comment
@@ -188,39 +228,47 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        MAX_PROD_UNITS: ${{ inputs.max_prod_units }}
+        MAX_WEIGHTED_SCORE: ${{ inputs.max_weighted_score }}
+        MAX_PROD_LINES: ${{ inputs.max_prod_lines }}
+        CONFIG_FILE: ${{ inputs.config_file }}
+        UPDATE_COMMENT: ${{ inputs.update_comment }}
+        ACTION_PATH: ${{ github.action_path }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPOSITORY: ${{ github.repository }}
       run: |
-        ARGS="--diff-file /tmp/pr_diff.txt"
-        ARGS="$ARGS --max-units ${{ inputs.max_prod_units }}"
-        ARGS="$ARGS --max-score ${{ inputs.max_weighted_score }}"
-        ARGS="$ARGS --format comment"
-        ARGS="$ARGS --no-fail"
+        ARGS=(--diff-file /tmp/pr_diff.txt)
+        ARGS+=(--max-units "$MAX_PROD_UNITS")
+        ARGS+=(--max-score "$MAX_WEIGHTED_SCORE")
+        ARGS+=(--format comment)
+        ARGS+=(--no-fail)
 
-        if [ -n "${{ inputs.max_prod_lines }}" ]; then
-          ARGS="$ARGS --max-lines ${{ inputs.max_prod_lines }}"
+        if [ -n "$MAX_PROD_LINES" ]; then
+          ARGS+=(--max-lines "$MAX_PROD_LINES")
         fi
 
-        if [ -n "${{ inputs.config_file }}" ]; then
-          ARGS="$ARGS --config ${{ inputs.config_file }}"
+        if [ -n "$CONFIG_FILE" ]; then
+          ARGS+=(--config "$CONFIG_FILE")
         fi
 
-        COMMENT=$(${{ github.action_path }}/target/release/rust-diff-analyzer $ARGS)
+        COMMENT=$("$ACTION_PATH/target/release/rust-diff-analyzer" "${ARGS[@]}")
         MARKER="<!-- rust-diff-analyzer-comment -->"
-        PR_NUMBER=${{ github.event.pull_request.number }}
 
-        if [ "${{ inputs.update_comment }}" = "true" ]; then
-          EXISTING=$(gh api repos/${{ github.repository }}/issues/${PR_NUMBER}/comments \
-            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" | head -1)
+        if [ "$UPDATE_COMMENT" = "true" ]; then
+          EXISTING_IDS=$(gh api --paginate "repos/$REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.body | contains(\"$MARKER\")) | .id")
+          EXISTING=$(printf '%s\n' "$EXISTING_IDS" | sed -n '1p')
 
           if [ -n "$EXISTING" ]; then
-            gh api repos/${{ github.repository }}/issues/comments/${EXISTING} \
+            gh api "repos/$REPOSITORY/issues/comments/$EXISTING" \
               -X PATCH -f body="$COMMENT"
             echo "Updated existing comment"
           else
-            gh pr comment $PR_NUMBER --body "$COMMENT"
+            gh pr comment "$PR_NUMBER" --body "$COMMENT"
             echo "Created new comment"
           fi
         else
-          gh pr comment $PR_NUMBER --body "$COMMENT"
+          gh pr comment "$PR_NUMBER" --body "$COMMENT"
           echo "Created new comment"
         fi
 

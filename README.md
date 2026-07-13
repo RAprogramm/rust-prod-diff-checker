@@ -238,7 +238,9 @@ test_features = ["test-utils", "testing", "mock"]
 test_paths = ["tests/", "benches/", "examples/"]
 # Paths to completely ignore in analysis
 ignore_paths = ["generated/", "vendor/"]
-# Authors to ignore in PR analysis (e.g., dependabot, renovate, github-actions)
+# Authors to ignore in PR analysis (e.g., dependabot, renovate, github-actions).
+# Used by the GitHub Action: when every commit in the PR comes from an ignored
+# author, the analysis is skipped entirely. Mixed PRs are analyzed in full.
 ignored_authors = ["dependabot[bot]", "github-actions[bot]", "renovate[bot]"]
 
 # Weight settings - how much each item type contributes to the score
