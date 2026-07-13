@@ -101,6 +101,10 @@ pub fn is_in_test_module(unit: &SemanticUnit) -> bool {
 
 /// Checks if unit has a test-related feature attribute
 ///
+/// The AST visitor records `#[cfg(feature = "name")]` gates as
+/// `cfg_feature:name` attribute markers; this matches those markers against
+/// the configured test features.
+///
 /// # Arguments
 ///
 /// * `unit` - Semantic unit to check
@@ -108,7 +112,7 @@ pub fn is_in_test_module(unit: &SemanticUnit) -> bool {
 ///
 /// # Returns
 ///
-/// `true` if unit has a test feature attribute
+/// `true` if unit is gated behind a configured test feature
 ///
 /// # Examples
 ///
@@ -124,26 +128,24 @@ pub fn is_in_test_module(unit: &SemanticUnit) -> bool {
 ///     "mock_fn".to_string(),
 ///     Visibility::Private,
 ///     LineSpan::new(1, 10),
-///     vec!["cfg".to_string()],
+///     vec!["cfg".to_string(), "cfg_feature:mock".to_string()],
 /// );
 ///
 /// let config = Config::default();
-/// let result = has_test_feature(&unit, &config);
+/// assert!(has_test_feature(&unit, &config));
 /// ```
 pub fn has_test_feature(unit: &SemanticUnit, config: &Config) -> bool {
-    let test_features = config.test_features_set();
-
-    for attr in &unit.attributes {
-        if attr.starts_with("cfg") {
-            for feature in &test_features {
-                if attr.contains(feature) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    false
+    unit.attributes.iter().any(|attr| {
+        attr.strip_prefix("cfg_feature:")
+            .map(|name| {
+                config
+                    .classification
+                    .test_features
+                    .iter()
+                    .any(|feature| feature == name)
+            })
+            .unwrap_or(false)
+    })
 }
 
 #[cfg(test)]
@@ -177,5 +179,28 @@ mod tests {
     fn test_is_in_test_module() {
         assert!(is_in_test_module(&make_unit(vec!["cfg_test"])));
         assert!(!is_in_test_module(&make_unit(vec!["test"])));
+    }
+
+    #[test]
+    fn test_has_test_feature_matches_configured_feature() {
+        let config = Config::default();
+        assert!(has_test_feature(
+            &make_unit(vec!["cfg", "cfg_feature:mock"]),
+            &config
+        ));
+        assert!(has_test_feature(
+            &make_unit(vec!["cfg", "cfg_feature:test-utils"]),
+            &config
+        ));
+    }
+
+    #[test]
+    fn test_has_test_feature_ignores_other_features() {
+        let config = Config::default();
+        assert!(!has_test_feature(
+            &make_unit(vec!["cfg", "cfg_feature:serde"]),
+            &config
+        ));
+        assert!(!has_test_feature(&make_unit(vec!["cfg"]), &config));
     }
 }

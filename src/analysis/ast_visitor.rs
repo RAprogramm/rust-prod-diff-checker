@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream, TokenTree};
 use syn::{
     Attribute, File, ImplItem, ItemConst, ItemEnum, ItemFn, ItemImpl, ItemMacro, ItemMod,
     ItemStatic, ItemStruct, ItemTrait, ItemType, TraitItem, Visibility as SynVisibility,
@@ -10,11 +10,78 @@ use syn::{
 
 use crate::types::{LineSpan, SemanticUnit, SemanticUnitKind, Visibility};
 
+/// Checks whether a `cfg` predicate token stream enables the item for test
+/// builds.
+///
+/// Matches a bare `test` ident at any nesting level except inside `not(...)`,
+/// so `#[cfg(test)]` and `#[cfg(any(test, unix))]` match while
+/// `#[cfg(not(test))]` and `#[cfg(feature = "latest")]` do not.
+fn cfg_predicate_enables_test(tokens: TokenStream, inside_not: bool) -> bool {
+    let mut last_ident: Option<String> = None;
+
+    for tree in tokens {
+        match tree {
+            TokenTree::Ident(ident) => {
+                let name = ident.to_string();
+                if name == "test" && !inside_not {
+                    return true;
+                }
+                last_ident = Some(name);
+            }
+            TokenTree::Group(group) => {
+                let inner_not = inside_not || last_ident.as_deref() == Some("not");
+                if cfg_predicate_enables_test(group.stream(), inner_not) {
+                    return true;
+                }
+                last_ident = None;
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
+/// Collects `feature = "name"` values from a `cfg` predicate token stream,
+/// skipping features negated via `not(...)`.
+fn collect_cfg_features(tokens: TokenStream, inside_not: bool, out: &mut Vec<String>) {
+    let mut last_ident: Option<String> = None;
+    let mut after_feature_eq = false;
+
+    for tree in tokens {
+        match tree {
+            TokenTree::Ident(ident) => {
+                last_ident = Some(ident.to_string());
+                after_feature_eq = false;
+            }
+            TokenTree::Punct(punct) => {
+                after_feature_eq =
+                    punct.as_char() == '=' && last_ident.as_deref() == Some("feature");
+            }
+            TokenTree::Literal(literal) => {
+                if after_feature_eq && !inside_not {
+                    let raw = literal.to_string();
+                    out.push(raw.trim_matches('"').to_string());
+                }
+                after_feature_eq = false;
+                last_ident = None;
+            }
+            TokenTree::Group(group) => {
+                let inner_not = inside_not || last_ident.as_deref() == Some("not");
+                collect_cfg_features(group.stream(), inner_not, out);
+                last_ident = None;
+                after_feature_eq = false;
+            }
+        }
+    }
+}
+
 /// Visitor for extracting semantic units from Rust AST
 pub struct SemanticUnitVisitor {
     units: Vec<SemanticUnit>,
     in_test_module: bool,
     current_impl_name: Option<String>,
+    current_trait_visibility: Option<Visibility>,
 }
 
 impl SemanticUnitVisitor {
@@ -36,6 +103,7 @@ impl SemanticUnitVisitor {
             units: Vec::new(),
             in_test_module: false,
             current_impl_name: None,
+            current_trait_visibility: None,
         }
     }
 
@@ -86,25 +154,49 @@ impl SemanticUnitVisitor {
     }
 
     fn extract_attributes(&self, attrs: &[Attribute]) -> Vec<String> {
-        attrs
-            .iter()
-            .filter_map(|attr| attr.path().get_ident().map(|ident| ident.to_string()))
-            .collect()
+        let mut attributes = Vec::new();
+
+        for attr in attrs {
+            let path = attr.path();
+            let name = path
+                .segments
+                .iter()
+                .map(|s| s.ident.to_string())
+                .collect::<Vec<_>>()
+                .join("::");
+            if !name.is_empty() {
+                attributes.push(name);
+            }
+
+            if path.is_ident("cfg")
+                && let Ok(meta) = attr.meta.require_list()
+            {
+                let mut features = Vec::new();
+                collect_cfg_features(meta.tokens.clone(), false, &mut features);
+                for feature in features {
+                    attributes.push(format!("cfg_feature:{}", feature));
+                }
+            }
+        }
+
+        attributes
     }
 
     fn has_test_attribute(&self, attrs: &[Attribute]) -> bool {
         attrs.iter().any(|attr| {
             let path = attr.path();
-            if path.is_ident("test") || path.is_ident("bench") {
+            let last_is_test = path
+                .segments
+                .last()
+                .map(|s| s.ident == "test" || s.ident == "bench")
+                .unwrap_or(false);
+            if last_is_test && !path.is_ident("cfg") {
                 return true;
             }
             if path.is_ident("cfg")
                 && let Ok(meta) = attr.meta.require_list()
             {
-                let tokens = meta.tokens.to_string();
-                if tokens.contains("test") {
-                    return true;
-                }
+                return cfg_predicate_enables_test(meta.tokens.clone(), false);
             }
             false
         })
@@ -115,8 +207,7 @@ impl SemanticUnitVisitor {
             if attr.path().is_ident("cfg")
                 && let Ok(meta) = attr.meta.require_list()
             {
-                let tokens = meta.tokens.to_string();
-                return tokens.contains("test");
+                return cfg_predicate_enables_test(meta.tokens.clone(), false);
             }
             false
         })
@@ -202,14 +293,18 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
     }
 
     fn visit_item_trait(&mut self, node: &'ast ItemTrait) {
+        let visibility = self.convert_visibility(&node.vis);
         self.add_unit(
             SemanticUnitKind::Trait,
             node.ident.to_string(),
-            self.convert_visibility(&node.vis),
+            visibility.clone(),
             node.span(),
             &node.attrs,
         );
+
+        let previous_visibility = self.current_trait_visibility.replace(visibility);
         syn::visit::visit_item_trait(self, node);
+        self.current_trait_visibility = previous_visibility;
     }
 
     fn visit_item_impl(&mut self, node: &'ast ItemImpl) {
@@ -236,6 +331,11 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
 
         let previous_impl_name = self.current_impl_name.take();
         self.current_impl_name = Some(impl_name);
+
+        let was_in_test = self.in_test_module;
+        if self.is_test_module(&node.attrs) {
+            self.in_test_module = true;
+        }
 
         for item in &node.items {
             match item {
@@ -270,6 +370,7 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
             }
         }
 
+        self.in_test_module = was_in_test;
         self.current_impl_name = previous_impl_name;
     }
 
@@ -339,12 +440,17 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
     }
 
     fn visit_trait_item(&mut self, node: &'ast TraitItem) {
+        let visibility = self
+            .current_trait_visibility
+            .clone()
+            .unwrap_or(Visibility::Public);
+
         match node {
             TraitItem::Fn(method) => {
                 self.add_unit(
                     SemanticUnitKind::Function,
                     method.sig.ident.to_string(),
-                    Visibility::Public,
+                    visibility,
                     method.span(),
                     &method.attrs,
                 );
@@ -353,7 +459,7 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
                 self.add_unit(
                     SemanticUnitKind::Const,
                     c.ident.to_string(),
-                    Visibility::Public,
+                    visibility,
                     c.span(),
                     &c.attrs,
                 );
@@ -362,7 +468,7 @@ impl<'ast> Visit<'ast> for SemanticUnitVisitor {
                 self.add_unit(
                     SemanticUnitKind::TypeAlias,
                     t.ident.to_string(),
-                    Visibility::Public,
+                    visibility,
                     t.span(),
                     &t.attrs,
                 );
@@ -488,5 +594,133 @@ mod tests {
             .expect("test_it not found");
         assert!(test_fn.has_attribute("test"));
         assert!(test_fn.has_attribute("cfg_test"));
+    }
+
+    #[test]
+    fn test_cfg_not_test_is_production() {
+        let code = r#"
+            #[cfg(not(test))]
+            pub fn prod_only() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert_eq!(units.len(), 1);
+        assert!(!units[0].has_attribute("test"));
+    }
+
+    #[test]
+    fn test_cfg_feature_latest_is_not_test() {
+        let code = r#"
+            #[cfg(feature = "latest")]
+            pub fn latest_api() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert!(!units[0].has_attribute("test"));
+        assert!(units[0].has_attribute("cfg_feature:latest"));
+    }
+
+    #[test]
+    fn test_cfg_any_test_is_test() {
+        let code = r#"
+            #[cfg(any(test, feature = "slow"))]
+            fn helper() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert!(units[0].has_attribute("test"));
+    }
+
+    #[test]
+    fn test_multi_segment_test_attribute() {
+        let code = r#"
+            #[tokio::test]
+            async fn async_test() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert!(units[0].has_attribute("test"));
+        assert!(units[0].has_attribute("tokio::test"));
+    }
+
+    #[test]
+    fn test_cfg_feature_marker_recorded() {
+        let code = r#"
+            #[cfg(feature = "mock")]
+            pub fn mock_helper() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert!(units[0].has_attribute("cfg_feature:mock"));
+    }
+
+    #[test]
+    fn test_cfg_not_feature_marker_skipped() {
+        let code = r#"
+            #[cfg(not(feature = "mock"))]
+            pub fn real_impl() {}
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        assert!(!units[0].has_attribute("cfg_feature:mock"));
+    }
+
+    #[test]
+    fn test_cfg_test_impl_marks_methods() {
+        let code = r#"
+            struct Foo;
+
+            #[cfg(test)]
+            impl Foo {
+                fn helper() {}
+            }
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        let helper = units
+            .iter()
+            .find(|u| u.name == "helper")
+            .expect("helper not found");
+        assert!(helper.has_attribute("cfg_test"));
+
+        let foo = units
+            .iter()
+            .find(|u| matches!(u.kind, SemanticUnitKind::Struct))
+            .expect("struct not found");
+        assert!(!foo.has_attribute("cfg_test"));
+    }
+
+    #[test]
+    fn test_private_trait_items_inherit_visibility() {
+        let code = r#"
+            trait Internal {
+                fn hidden(&self);
+            }
+
+            pub trait External {
+                fn visible(&self);
+            }
+        "#;
+        let file = syn::parse_file(code).expect("parse failed");
+        let units = SemanticUnitVisitor::extract(&file);
+
+        let hidden = units
+            .iter()
+            .find(|u| u.name == "hidden")
+            .expect("hidden not found");
+        assert!(matches!(hidden.visibility, Visibility::Private));
+
+        let visible = units
+            .iter()
+            .find(|u| u.name == "visible")
+            .expect("visible not found");
+        assert!(matches!(visible.visibility, Visibility::Public));
     }
 }
