@@ -283,14 +283,18 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
 
     let non_rust = scope.non_rust_count();
     let ignored = scope.ignored_count();
+    let deleted = scope.deleted_count();
 
-    if non_rust > 0 || ignored > 0 {
+    if non_rust > 0 || ignored > 0 || deleted > 0 {
         output.push_str("**Skipped files:**\n");
         if non_rust > 0 {
             output.push_str(&format!("- {} non-Rust files\n", non_rust));
         }
         if ignored > 0 {
             output.push_str(&format!("- {} files matched ignore patterns\n", ignored));
+        }
+        if deleted > 0 {
+            output.push_str(&format!("- {} deleted files\n", deleted));
         }
         output.push('\n');
     }
@@ -301,6 +305,7 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
             let reason = match &skipped.reason {
                 ExclusionReason::NonRust => "non-Rust".to_string(),
                 ExclusionReason::IgnorePattern(p) => format!("pattern: {}", p),
+                ExclusionReason::Deleted => "deleted".to_string(),
             };
             output.push_str(&format!("- `{}` ({})\n", skipped.path.display(), reason));
         }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use masterror::AppError;
 
@@ -15,6 +15,8 @@ pub struct FileDiff {
     pub path: PathBuf,
     /// Original path (if renamed)
     pub old_path: Option<PathBuf>,
+    /// Whether the file was deleted in this diff
+    pub is_deleted: bool,
     /// Hunks in this file diff
     pub hunks: Vec<Hunk>,
 }
@@ -44,6 +46,7 @@ impl FileDiff {
         Self {
             path,
             old_path: None,
+            is_deleted: false,
             hunks: Vec::new(),
         }
     }
@@ -217,33 +220,32 @@ pub fn parse_diff(input: &str) -> Result<Vec<FileDiff>, AppError> {
                 old_line = old_start;
                 new_line = new_start;
             }
-        } else if let Some(ref mut hunk) = current_hunk
-            && let Some(first_char) = line.chars().next()
-        {
-            let content = if line.len() > 1 {
-                line[1..].to_string()
-            } else {
-                String::new()
-            };
-
-            match first_char {
-                '+' => {
-                    hunk.lines.push(HunkLine::added(new_line, content));
-                    new_line += 1;
-                }
-                '-' => {
-                    hunk.lines.push(HunkLine::removed(old_line, content));
-                    old_line += 1;
-                }
-                ' ' => {
+        } else if let Some(ref mut hunk) = current_hunk {
+            let mut chars = line.chars();
+            match chars.next() {
+                Some('+') => {
                     hunk.lines
-                        .push(HunkLine::context(old_line, new_line, content));
+                        .push(HunkLine::added(new_line, chars.as_str().to_string()));
+                    new_line += 1;
+                }
+                Some('-') => {
+                    hunk.lines
+                        .push(HunkLine::removed(old_line, chars.as_str().to_string()));
+                    old_line += 1;
+                }
+                Some(' ') | None => {
+                    hunk.lines.push(HunkLine::context(
+                        old_line,
+                        new_line,
+                        chars.as_str().to_string(),
+                    ));
                     old_line += 1;
                     new_line += 1;
                 }
-                '\\' => {}
-                _ => {}
+                Some(_) => {}
             }
+        } else if let Some(ref mut file) = current_file {
+            apply_file_metadata(line, file);
         }
     }
 
@@ -257,17 +259,115 @@ pub fn parse_diff(input: &str) -> Result<Vec<FileDiff>, AppError> {
     Ok(files)
 }
 
-fn parse_diff_header(line: &str) -> Result<PathBuf, AppError> {
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    if parts.len() < 4 {
-        return Err(DiffParseError {
-            message: format!("invalid diff header: {}", line),
+/// Applies file-level metadata lines (`---`, `+++`, `rename`, `deleted file
+/// mode`) that appear between a `diff --git` header and the first hunk.
+fn apply_file_metadata(line: &str, file: &mut FileDiff) {
+    if let Some(rest) = line.strip_prefix("+++ ") {
+        let target = extract_path_token(rest);
+        if target == "/dev/null" {
+            file.is_deleted = true;
+        } else {
+            let path = target.strip_prefix("b/").unwrap_or(&target);
+            file.path = PathBuf::from(path);
+            if file.old_path.as_deref() == Some(file.path.as_path()) {
+                file.old_path = None;
+            }
         }
-        .into());
+    } else if let Some(rest) = line.strip_prefix("--- ") {
+        let target = extract_path_token(rest);
+        if target != "/dev/null" {
+            let path = target.strip_prefix("a/").unwrap_or(&target);
+            if Path::new(path) != file.path {
+                file.old_path = Some(PathBuf::from(path));
+            }
+        }
+    } else if let Some(rest) = line.strip_prefix("rename from ") {
+        file.old_path = Some(PathBuf::from(unquote_git_path(rest.trim_end())));
+    } else if let Some(rest) = line.strip_prefix("rename to ") {
+        file.path = PathBuf::from(unquote_git_path(rest.trim_end()));
+    } else if line.starts_with("deleted file mode") {
+        file.is_deleted = true;
+    }
+}
+
+/// Extracts a path from the remainder of a `---`/`+++` line, unquoting
+/// git-quoted paths and dropping a trailing tab-separated timestamp.
+fn extract_path_token(rest: &str) -> String {
+    if rest.starts_with('"') {
+        unquote_git_path(rest.trim_end())
+    } else {
+        rest.split('\t')
+            .next()
+            .unwrap_or(rest)
+            .trim_end()
+            .to_string()
+    }
+}
+
+/// Decodes a git-quoted path (`"a/\321\204.rs"`) into its unquoted form.
+///
+/// Handles the C-style escapes git emits with `core.quotepath=true`:
+/// `\\`, `\"`, `\t`, `\n`, `\r` and octal byte escapes (`\321`). Input
+/// without surrounding double quotes is returned unchanged.
+fn unquote_git_path(raw: &str) -> String {
+    let inner = match raw.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+        Some(inner) => inner,
+        None => return raw.to_string(),
+    };
+
+    let mut bytes = Vec::with_capacity(inner.len());
+    let mut iter = inner.bytes().peekable();
+    while let Some(byte) = iter.next() {
+        if byte != b'\\' {
+            bytes.push(byte);
+            continue;
+        }
+        match iter.next() {
+            Some(b'n') => bytes.push(b'\n'),
+            Some(b't') => bytes.push(b'\t'),
+            Some(b'r') => bytes.push(b'\r'),
+            Some(digit @ b'0'..=b'7') => {
+                let mut value = u32::from(digit - b'0');
+                for _ in 0..2 {
+                    match iter.peek().copied() {
+                        Some(next @ b'0'..=b'7') => {
+                            value = value * 8 + u32::from(next - b'0');
+                            iter.next();
+                        }
+                        _ => break,
+                    }
+                }
+                bytes.push(value as u8);
+            }
+            Some(other) => bytes.push(other),
+            None => {}
+        }
     }
 
-    let b_path = parts[3];
-    let path = b_path.strip_prefix("b/").unwrap_or(b_path);
+    String::from_utf8_lossy(&bytes).into_owned()
+}
+
+fn parse_diff_header(line: &str) -> Result<PathBuf, AppError> {
+    let invalid_header = || {
+        AppError::from(DiffParseError {
+            message: format!("invalid diff header: {}", line),
+        })
+    };
+
+    let rest = line
+        .strip_prefix("diff --git ")
+        .ok_or_else(invalid_header)?;
+    let b_part = if rest.ends_with('"') {
+        rest.rfind(" \"").map(|pos| &rest[pos + 1..])
+    } else {
+        rest.rfind(" b/").map(|pos| &rest[pos + 1..])
+    };
+    let b_part = b_part
+        .or_else(|| rest.split_whitespace().nth(1))
+        .ok_or_else(invalid_header)?;
+
+    let unquoted = unquote_git_path(b_part);
+    let path = unquoted.strip_prefix("b/").unwrap_or(&unquoted);
     Ok(PathBuf::from(path))
 }
 
@@ -402,5 +502,102 @@ diff --git a/src/b.rs b/src/b.rs
 
         let md_diff = FileDiff::new(PathBuf::from("README.md"));
         assert!(!md_diff.is_rust_file());
+    }
+
+    #[test]
+    fn test_parse_multibyte_content_does_not_panic() {
+        let diff = "diff --git a/src/lib.rs b/src/lib.rs\n--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ \
+                    -1,2 +1,2 @@\n контекст\n-старая строка\n+новая строка\nПривет без префикса\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].total_added(), 1);
+        assert_eq!(files[0].total_removed(), 1);
+        let hunk = &files[0].hunks[0];
+        assert_eq!(hunk.added_lines(), vec![2]);
+        assert_eq!(hunk.removed_lines(), vec![2]);
+    }
+
+    #[test]
+    fn test_parse_deleted_file() {
+        let diff = "diff --git a/src/old.rs b/src/old.rs\ndeleted file mode 100644\nindex \
+                    1234567..0000000\n--- a/src/old.rs\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-fn \
+                    gone() {}\n-fn also_gone() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert!(files[0].is_deleted);
+        assert_eq!(files[0].path, PathBuf::from("src/old.rs"));
+        assert_eq!(files[0].total_removed(), 2);
+    }
+
+    #[test]
+    fn test_parse_new_file_is_not_deleted() {
+        let diff = "diff --git a/src/new.rs b/src/new.rs\nnew file mode 100644\n--- \
+                    /dev/null\n+++ b/src/new.rs\n@@ -0,0 +1,1 @@\n+fn fresh() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert!(!files[0].is_deleted);
+        assert!(files[0].old_path.is_none());
+        assert_eq!(files[0].path, PathBuf::from("src/new.rs"));
+    }
+
+    #[test]
+    fn test_parse_renamed_file() {
+        let diff = "diff --git a/src/before.rs b/src/after.rs\nsimilarity index 90%\nrename from \
+                    src/before.rs\nrename to src/after.rs\n--- a/src/before.rs\n+++ \
+                    b/src/after.rs\n@@ -1,1 +1,2 @@\n fn kept() {}\n+fn added() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].path, PathBuf::from("src/after.rs"));
+        assert_eq!(files[0].old_path, Some(PathBuf::from("src/before.rs")));
+        assert!(!files[0].is_deleted);
+    }
+
+    #[test]
+    fn test_parse_path_with_spaces() {
+        let diff = "diff --git a/src/my file.rs b/src/my file.rs\n--- a/src/my file.rs\n+++ \
+                    b/src/my file.rs\n@@ -1,1 +1,2 @@\n fn a() {}\n+fn b() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].path, PathBuf::from("src/my file.rs"));
+        assert!(files[0].old_path.is_none());
+    }
+
+    #[test]
+    fn test_parse_quoted_path_with_octal_escapes() {
+        let diff = "diff --git \"a/src/\\321\\204.rs\" \"b/src/\\321\\204.rs\"\n--- \
+                    \"a/src/\\321\\204.rs\"\n+++ \"b/src/\\321\\204.rs\"\n@@ -1,1 +1,2 @@\n fn \
+                    a() {}\n+fn b() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].path, PathBuf::from("src/ф.rs"));
+    }
+
+    #[test]
+    fn test_unquote_escapes() {
+        assert_eq!(unquote_git_path("plain/path.rs"), "plain/path.rs");
+        assert_eq!(unquote_git_path("\"a b.rs\""), "a b.rs");
+        assert_eq!(unquote_git_path("\"tab\\there\""), "tab\there");
+        assert_eq!(unquote_git_path("\"q\\\"uote\""), "q\"uote");
+        assert_eq!(unquote_git_path("\"\\321\\204\""), "ф");
+    }
+
+    #[test]
+    fn test_removed_line_numbers_across_hunks() {
+        let diff = "diff --git a/src/lib.rs b/src/lib.rs\n--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ \
+                    -1,3 +1,2 @@\n fn a() {}\n-fn removed_one() {}\n fn c() {}\n@@ -10,3 +9,2 \
+                    @@\n fn x() {}\n-fn removed_two() {}\n fn z() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].all_removed_lines(), vec![2, 11]);
+        assert!(files[0].all_added_lines().is_empty());
+    }
+
+    #[test]
+    fn test_empty_line_in_hunk_is_empty_context() {
+        let diff = "diff --git a/src/lib.rs b/src/lib.rs\n--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ \
+                    -1,3 +1,4 @@\n fn a() {}\n\n+fn b() {}\n fn c() {}\n";
+
+        let files = parse_diff(diff).expect("parse should succeed");
+        assert_eq!(files[0].all_added_lines(), vec![3]);
     }
 }
