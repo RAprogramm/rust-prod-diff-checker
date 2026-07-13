@@ -9,7 +9,6 @@ use super::extractor::extract_semantic_units_from_str;
 use crate::{
     classifier::classify_unit,
     config::Config,
-    error::FileReadError,
     git::FileDiff,
     types::{AnalysisScope, Change, ExclusionReason, SemanticUnit},
 };
@@ -36,7 +35,8 @@ pub struct MapResult {
 ///
 /// # Errors
 ///
-/// Returns error if file reading or parsing fails
+/// Currently never returns an error: files that fail to read or parse are
+/// recorded in the scope as skipped. The `Result` is kept for API stability.
 ///
 /// # Examples
 ///
@@ -85,34 +85,48 @@ where
             continue;
         }
 
+        let content = match file_reader(&diff.path) {
+            Ok(content) => content,
+            Err(e) => {
+                scope.add_skipped(diff.path.clone(), ExclusionReason::ReadError(e.to_string()));
+                continue;
+            }
+        };
+
+        let units = match extract_semantic_units_from_str(&content, &diff.path) {
+            Ok(units) => units,
+            Err(e) => {
+                scope.add_skipped(
+                    diff.path.clone(),
+                    ExclusionReason::ParseError(e.to_string()),
+                );
+                continue;
+            }
+        };
+
         scope.add_analyzed(diff.path.clone());
 
-        let content = file_reader(&diff.path)
-            .map_err(|e| AppError::from(FileReadError::new(diff.path.clone(), e)))?;
-
-        let units = extract_semantic_units_from_str(&content, &diff.path)?;
-
         let added_lines = diff.all_added_lines();
-        let removed_lines = diff.all_removed_lines();
+        let removed_positions = diff.all_removed_positions_in_new();
 
-        let mut unit_changes: HashMap<String, (usize, usize)> = HashMap::new();
+        let mut unit_changes: HashMap<usize, (usize, usize)> = HashMap::new();
 
         for line in &added_lines {
-            if let Some(unit) = find_containing_unit(&units, *line) {
-                let entry = unit_changes.entry(unit.qualified_name()).or_insert((0, 0));
+            if let Some(index) = find_containing_unit_index(&units, *line) {
+                let entry = unit_changes.entry(index).or_insert((0, 0));
                 entry.0 += 1;
             }
         }
 
-        for line in &removed_lines {
-            if let Some(unit) = find_containing_unit(&units, *line) {
-                let entry = unit_changes.entry(unit.qualified_name()).or_insert((0, 0));
+        for line in &removed_positions {
+            if let Some(index) = find_containing_unit_index(&units, *line) {
+                let entry = unit_changes.entry(index).or_insert((0, 0));
                 entry.1 += 1;
             }
         }
 
-        for unit in &units {
-            if let Some((added, removed)) = unit_changes.get(&unit.qualified_name()) {
+        for (index, unit) in units.iter().enumerate() {
+            if let Some((added, removed)) = unit_changes.get(&index) {
                 let classification = classify_unit(unit, &diff.path, config);
 
                 changes.push(Change::new(
@@ -129,16 +143,16 @@ where
     Ok(MapResult { changes, scope })
 }
 
-fn find_containing_unit(units: &[SemanticUnit], line: usize) -> Option<&SemanticUnit> {
-    let mut best_match: Option<&SemanticUnit> = None;
+fn find_containing_unit_index(units: &[SemanticUnit], line: usize) -> Option<usize> {
+    let mut best_match: Option<usize> = None;
 
-    for unit in units {
+    for (index, unit) in units.iter().enumerate() {
         if unit.span.contains(line) {
             match best_match {
-                None => best_match = Some(unit),
+                None => best_match = Some(index),
                 Some(current) => {
-                    if unit.span.len() < current.span.len() {
-                        best_match = Some(unit);
+                    if unit.span.len() < units[current].span.len() {
+                        best_match = Some(index);
                     }
                 }
             }
@@ -154,7 +168,7 @@ mod tests {
     use crate::types::{LineSpan, SemanticUnitKind, Visibility};
 
     #[test]
-    fn test_find_containing_unit() {
+    fn test_find_containing_unit_index() {
         let units = vec![
             SemanticUnit::new(
                 SemanticUnitKind::Module,
@@ -172,16 +186,154 @@ mod tests {
             ),
         ];
 
-        let result = find_containing_unit(&units, 15);
-        assert!(result.is_some());
-        assert_eq!(result.expect("should find unit").name, "func");
+        assert_eq!(find_containing_unit_index(&units, 15), Some(1));
+        assert_eq!(find_containing_unit_index(&units, 50), Some(0));
+        assert_eq!(find_containing_unit_index(&units, 200), None);
+    }
 
-        let result = find_containing_unit(&units, 50);
-        assert!(result.is_some());
-        assert_eq!(result.expect("should find unit").name, "module");
+    #[test]
+    fn test_removed_lines_attributed_in_new_coordinates() {
+        use std::path::PathBuf;
 
-        let result = find_containing_unit(&units, 200);
-        assert!(result.is_none());
+        use crate::{
+            config::Config,
+            git::{FileDiff, Hunk, HunkLine},
+        };
+
+        let content = "\
+fn first() {
+    1;
+}
+fn second() {
+    2;
+    3;
+}
+";
+
+        let mut hunk_top = Hunk::new(1, 10, 1, 0);
+        for old in 1..=10 {
+            hunk_top
+                .lines
+                .push(HunkLine::removed(old, format!("old prefix {}", old)));
+        }
+
+        let mut hunk_inner = Hunk::new(14, 4, 4, 3);
+        hunk_inner
+            .lines
+            .push(HunkLine::context(14, 4, "fn second() {".to_string()));
+        hunk_inner
+            .lines
+            .push(HunkLine::context(15, 5, "    2;".to_string()));
+        hunk_inner
+            .lines
+            .push(HunkLine::removed(16, "    gone();".to_string()));
+        hunk_inner
+            .lines
+            .push(HunkLine::context(17, 6, "    3;".to_string()));
+
+        let mut diff = FileDiff::new(PathBuf::from("src/prod.rs"));
+        diff.hunks = vec![hunk_top, hunk_inner];
+
+        let config = Config::default();
+        let result =
+            map_changes(&[diff], &config, |_| Ok(content.to_string())).expect("map should work");
+
+        let second = result
+            .changes
+            .iter()
+            .find(|c| c.unit.name == "second")
+            .expect("removal inside second must be attributed to second");
+        assert_eq!(second.lines_removed, 1);
+
+        let first = result
+            .changes
+            .iter()
+            .find(|c| c.unit.name == "first")
+            .expect("prefix removals must be attributed to the adjacent unit");
+        assert_eq!(first.lines_removed, 10);
+    }
+
+    #[test]
+    fn test_struct_and_impl_with_same_name_not_double_counted() {
+        use std::path::PathBuf;
+
+        use crate::{
+            config::Config,
+            git::{FileDiff, Hunk, HunkLine},
+        };
+
+        let content = "\
+pub struct Foo {
+    pub value: u32,
+}
+
+impl Foo {
+    pub fn get(&self) -> u32 {
+        self.value
+    }
+}
+";
+
+        let mut hunk = Hunk::new(1, 2, 1, 3);
+        hunk.lines
+            .push(HunkLine::context(1, 1, "pub struct Foo {".to_string()));
+        hunk.lines
+            .push(HunkLine::added(2, "    pub value: u32,".to_string()));
+        hunk.lines.push(HunkLine::context(2, 3, "}".to_string()));
+
+        let mut diff = FileDiff::new(PathBuf::from("src/prod.rs"));
+        diff.hunks = vec![hunk];
+
+        let config = Config::default();
+        let result =
+            map_changes(&[diff], &config, |_| Ok(content.to_string())).expect("map should work");
+
+        assert_eq!(result.changes.len(), 1);
+        assert_eq!(result.changes[0].unit.name, "Foo");
+        assert_eq!(result.changes[0].lines_added, 1);
+    }
+
+    #[test]
+    fn test_unreadable_file_is_skipped_not_fatal() {
+        use std::{io, path::PathBuf};
+
+        use crate::{config::Config, git::FileDiff};
+
+        let diff = FileDiff::new(PathBuf::from("src/missing.rs"));
+        let config = Config::default();
+
+        let result = map_changes(&[diff], &config, |_| {
+            Err(io::Error::new(io::ErrorKind::NotFound, "no such file"))
+        })
+        .expect("read failure must not abort analysis");
+
+        assert!(result.changes.is_empty());
+        assert!(result.scope.analyzed_files.is_empty());
+        assert_eq!(result.scope.error_count(), 1);
+        assert!(matches!(
+            result.scope.skipped_files[0].reason,
+            ExclusionReason::ReadError(_)
+        ));
+    }
+
+    #[test]
+    fn test_unparsable_file_is_skipped_not_fatal() {
+        use std::path::PathBuf;
+
+        use crate::{config::Config, git::FileDiff};
+
+        let diff = FileDiff::new(PathBuf::from("src/broken.rs"));
+        let config = Config::default();
+
+        let result = map_changes(&[diff], &config, |_| Ok("fn broken( {{{".to_string()))
+            .expect("parse failure must not abort analysis");
+
+        assert!(result.changes.is_empty());
+        assert_eq!(result.scope.error_count(), 1);
+        assert!(matches!(
+            result.scope.skipped_files[0].reason,
+            ExclusionReason::ParseError(_)
+        ));
     }
 
     #[test]

@@ -284,8 +284,9 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
     let non_rust = scope.non_rust_count();
     let ignored = scope.ignored_count();
     let deleted = scope.deleted_count();
+    let errored = scope.error_count();
 
-    if non_rust > 0 || ignored > 0 || deleted > 0 {
+    if non_rust > 0 || ignored > 0 || deleted > 0 || errored > 0 {
         output.push_str("**Skipped files:**\n");
         if non_rust > 0 {
             output.push_str(&format!("- {} non-Rust files\n", non_rust));
@@ -295,6 +296,9 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
         }
         if deleted > 0 {
             output.push_str(&format!("- {} deleted files\n", deleted));
+        }
+        if errored > 0 {
+            output.push_str(&format!("- {} files with read/parse errors\n", errored));
         }
         output.push('\n');
     }
@@ -306,6 +310,8 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
                 ExclusionReason::NonRust => "non-Rust".to_string(),
                 ExclusionReason::IgnorePattern(p) => format!("pattern: {}", p),
                 ExclusionReason::Deleted => "deleted".to_string(),
+                ExclusionReason::ReadError(e) => format!("read error: {}", e),
+                ExclusionReason::ParseError(e) => format!("parse error: {}", e),
             };
             output.push_str(&format!("- `{}` ({})\n", skipped.path.display(), reason));
         }

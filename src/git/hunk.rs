@@ -282,4 +282,42 @@ impl Hunk {
             .filter_map(|l| if l.is_removed() { l.old_line } else { None })
             .collect()
     }
+
+    /// Returns the new-file line positions where removals occurred
+    ///
+    /// Each removed line is attributed to the line number that occupies its
+    /// place in the new file, so removals can be mapped onto semantic units
+    /// extracted from post-change content. A removal at the very end of the
+    /// hunk yields the first line after the hunk.
+    ///
+    /// # Returns
+    ///
+    /// Vector of new-file line numbers, one per removed line
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_diff_analyzer::git::{Hunk, HunkLine};
+    ///
+    /// let mut hunk = Hunk::new(1, 3, 1, 2);
+    /// hunk.lines
+    ///     .push(HunkLine::context(1, 1, "fn a() {".to_string()));
+    /// hunk.lines
+    ///     .push(HunkLine::removed(2, "    old();".to_string()));
+    /// hunk.lines.push(HunkLine::context(3, 2, "}".to_string()));
+    /// assert_eq!(hunk.removed_positions_in_new(), vec![2]);
+    /// ```
+    pub fn removed_positions_in_new(&self) -> Vec<usize> {
+        let mut new_line = self.new_start;
+        let mut positions = Vec::new();
+
+        for line in &self.lines {
+            match line.line_type {
+                LineType::Removed => positions.push(new_line),
+                LineType::Added | LineType::Context => new_line += 1,
+            }
+        }
+
+        positions
+    }
 }

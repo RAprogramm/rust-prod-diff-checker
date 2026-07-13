@@ -131,6 +131,31 @@ impl FileDiff {
         self.hunks.iter().flat_map(|h| h.removed_lines()).collect()
     }
 
+    /// Returns new-file line positions of all removals across hunks
+    ///
+    /// See [`Hunk::removed_positions_in_new`] for the attribution rule.
+    ///
+    /// # Returns
+    ///
+    /// Vector of new-file line numbers, one per removed line
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::path::PathBuf;
+    ///
+    /// use rust_diff_analyzer::git::FileDiff;
+    ///
+    /// let diff = FileDiff::new(PathBuf::from("src/lib.rs"));
+    /// assert!(diff.all_removed_positions_in_new().is_empty());
+    /// ```
+    pub fn all_removed_positions_in_new(&self) -> Vec<usize> {
+        self.hunks
+            .iter()
+            .flat_map(|h| h.removed_positions_in_new())
+            .collect()
+    }
+
     /// Checks if file path ends with .rs extension
     ///
     /// # Returns
