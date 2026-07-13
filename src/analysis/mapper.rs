@@ -73,11 +73,15 @@ where
             continue;
         }
 
-        if let Some(pattern) = config.matched_ignore_pattern(&diff.path) {
-            scope.add_skipped(
-                diff.path.clone(),
-                ExclusionReason::IgnorePattern(pattern.to_string()),
-            );
+        if config.should_ignore(&diff.path) {
+            let pattern = config
+                .classification
+                .ignore_paths
+                .iter()
+                .find(|p| diff.path.to_string_lossy().contains(p.as_str()))
+                .cloned()
+                .unwrap_or_default();
+            scope.add_skipped(diff.path.clone(), ExclusionReason::IgnorePattern(pattern));
             continue;
         }
 
