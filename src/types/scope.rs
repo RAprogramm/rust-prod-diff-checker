@@ -12,6 +12,8 @@ pub enum ExclusionReason {
     NonRust,
     /// File matches an ignore pattern
     IgnorePattern(String),
+    /// File was deleted in the diff
+    Deleted,
 }
 
 /// Information about a skipped file
@@ -194,6 +196,30 @@ impl AnalysisScope {
         self.skipped_files
             .iter()
             .filter(|f| matches!(f.reason, ExclusionReason::IgnorePattern(_)))
+            .count()
+    }
+
+    /// Returns count of files skipped because they were deleted in the diff
+    ///
+    /// # Returns
+    ///
+    /// Number of deleted files
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::path::PathBuf;
+    ///
+    /// use rust_diff_analyzer::types::{AnalysisScope, ExclusionReason};
+    ///
+    /// let mut scope = AnalysisScope::new();
+    /// scope.add_skipped(PathBuf::from("src/old.rs"), ExclusionReason::Deleted);
+    /// assert_eq!(scope.deleted_count(), 1);
+    /// ```
+    pub fn deleted_count(&self) -> usize {
+        self.skipped_files
+            .iter()
+            .filter(|f| matches!(f.reason, ExclusionReason::Deleted))
             .count()
     }
 }

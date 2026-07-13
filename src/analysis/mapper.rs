@@ -68,6 +68,11 @@ where
             continue;
         }
 
+        if diff.is_deleted {
+            scope.add_skipped(diff.path.clone(), ExclusionReason::Deleted);
+            continue;
+        }
+
         if config.should_ignore(&diff.path) {
             let pattern = config
                 .classification
@@ -177,5 +182,31 @@ mod tests {
 
         let result = find_containing_unit(&units, 200);
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_deleted_file_is_skipped_without_reading() {
+        use std::{io, path::PathBuf};
+
+        use crate::{config::Config, git::FileDiff};
+
+        let mut diff = FileDiff::new(PathBuf::from("src/gone.rs"));
+        diff.is_deleted = true;
+        let config = Config::default();
+
+        let result = map_changes(&[diff], &config, |path| {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("must not be read: {}", path.display()),
+            ))
+        })
+        .expect("deleted file must not abort analysis");
+
+        assert!(result.changes.is_empty());
+        assert_eq!(result.scope.skipped_files.len(), 1);
+        assert_eq!(
+            result.scope.skipped_files[0].reason,
+            ExclusionReason::Deleted
+        );
     }
 }
