@@ -295,13 +295,16 @@ jobs:
       - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
+          # Tag the commit that triggered this run (the PR merge commit).
+          # Tagging the pulled main HEAD would land on the changelog bot's
+          # "[skip ci]" commit, and a tag push targeting a [skip ci] commit
+          # never triggers the tag-driven release jobs.
           TAG="v${{ steps.version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-          git tag -a "$TAG" -m "Release $TAG"
+          git tag -a "$TAG" -m "Release $TAG" "$GITHUB_SHA"
           git push origin "$TAG"
-          echo "Created and pushed tag $TAG"
+          echo "Created and pushed tag $TAG for $GITHUB_SHA"
 
   # Release jobs - only on tag push
   release-build:
