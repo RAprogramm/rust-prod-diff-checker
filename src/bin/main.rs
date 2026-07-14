@@ -12,12 +12,12 @@ use clap::Parser;
 use masterror::AppError;
 use rust_diff_analyzer::{
     analysis::map_changes,
-    classifier::rules::calculate_weight,
+    classifier::rules::{calculate_weight, exceeded_per_type_limits},
     config::{Config, OutputFormat},
     error::FileReadError,
     git::parse_diff,
     output::format_output,
-    types::{AnalysisResult, Change, SemanticUnitKind, Summary},
+    types::{AnalysisResult, SemanticUnitKind, Summary},
 };
 
 /// Semantic analyzer for Rust PR diffs
@@ -148,7 +148,7 @@ fn run() -> Result<(), AppError> {
             .max_prod_lines
             .map(|limit| summary.prod_lines_added > limit)
             .unwrap_or(false)
-        || check_per_type_limits(&changes, &config);
+        || !exceeded_per_type_limits(&changes, &config).is_empty();
 
     let result = AnalysisResult::new(changes, summary, scope);
 
@@ -182,58 +182,4 @@ fn read_diff(path: &Option<PathBuf>) -> Result<String, AppError> {
             Ok(String::from_utf8_lossy(&buffer).into_owned())
         }
     }
-}
-
-fn check_per_type_limits(changes: &[Change], config: &Config) -> bool {
-    let per_type = match &config.limits.per_type {
-        Some(limits) => limits,
-        None => return false,
-    };
-
-    let mut functions = 0;
-    let mut structs = 0;
-    let mut enums = 0;
-    let mut traits = 0;
-    let mut impl_blocks = 0;
-    let mut consts = 0;
-    let mut statics = 0;
-    let mut type_aliases = 0;
-    let mut macros = 0;
-    let mut modules = 0;
-
-    for change in changes {
-        if !change.classification.is_production() {
-            continue;
-        }
-
-        match change.unit.kind {
-            SemanticUnitKind::Function => functions += 1,
-            SemanticUnitKind::Struct => structs += 1,
-            SemanticUnitKind::Enum => enums += 1,
-            SemanticUnitKind::Trait => traits += 1,
-            SemanticUnitKind::Impl => impl_blocks += 1,
-            SemanticUnitKind::Const => consts += 1,
-            SemanticUnitKind::Static => statics += 1,
-            SemanticUnitKind::TypeAlias => type_aliases += 1,
-            SemanticUnitKind::Macro => macros += 1,
-            SemanticUnitKind::Module => modules += 1,
-        }
-    }
-
-    per_type.functions.map(|l| functions > l).unwrap_or(false)
-        || per_type.structs.map(|l| structs > l).unwrap_or(false)
-        || per_type.enums.map(|l| enums > l).unwrap_or(false)
-        || per_type.traits.map(|l| traits > l).unwrap_or(false)
-        || per_type
-            .impl_blocks
-            .map(|l| impl_blocks > l)
-            .unwrap_or(false)
-        || per_type.consts.map(|l| consts > l).unwrap_or(false)
-        || per_type.statics.map(|l| statics > l).unwrap_or(false)
-        || per_type
-            .type_aliases
-            .map(|l| type_aliases > l)
-            .unwrap_or(false)
-        || per_type.macros.map(|l| macros > l).unwrap_or(false)
-        || per_type.modules.map(|l| modules > l).unwrap_or(false)
 }
