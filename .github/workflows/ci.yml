@@ -24,7 +24,7 @@ jobs:
       deps: ${{ steps.filter.outputs.deps }}
       reuse: ${{ steps.filter.outputs.reuse }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -56,7 +56,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: ./
@@ -75,7 +75,7 @@ jobs:
       (needs.changes.outputs.rust == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
@@ -90,7 +90,7 @@ jobs:
       (needs.changes.outputs.rust == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -108,7 +108,7 @@ jobs:
       (needs.clippy.result == 'success' || needs.clippy.result == 'skipped') &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
@@ -122,7 +122,7 @@ jobs:
         continue-on-error: true
       - name: Upload coverage and test results to Codecov
         if: github.event_name != 'pull_request'
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
@@ -146,7 +146,7 @@ jobs:
       (needs.clippy.result == 'success' || needs.clippy.result == 'skipped') &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --no-deps --all-features
@@ -162,7 +162,7 @@ jobs:
       (needs.changes.outputs.rust == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       needs.test.result == 'success'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo bench --no-run
@@ -176,7 +176,7 @@ jobs:
       (needs.changes.outputs.deps == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -192,7 +192,7 @@ jobs:
       (needs.changes.outputs.reuse == 'true' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.pr-analysis.result == 'success' || needs.pr-analysis.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: fsfe/reuse-action@v6
 
   build:
@@ -209,7 +209,7 @@ jobs:
       (needs.audit.result == 'success' || needs.audit.result == 'skipped') &&
       (needs.reuse.result == 'success' || needs.reuse.result == 'skipped')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release --all-features
@@ -230,7 +230,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.DEPLOY_KEY }}
@@ -268,7 +268,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.DEPLOY_KEY }}
@@ -347,7 +347,7 @@ jobs:
             archive: zip
             cross: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -397,7 +397,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -438,7 +438,7 @@ jobs:
       contains(github.ref, '.') &&
       needs.release-build.result == 'success'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Publish
