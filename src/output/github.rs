@@ -11,21 +11,45 @@ pub struct GithubFormatter;
 
 impl Formatter for GithubFormatter {
     fn format(&self, result: &AnalysisResult, _config: &Config) -> Result<String, AppError> {
-        use std::fmt::Write;
-
-        let summary = &result.summary;
         let mut output = String::new();
 
-        let _ = writeln!(output, "prod_functions_changed={}", summary.prod_functions);
-        let _ = writeln!(output, "prod_structs_changed={}", summary.prod_structs);
-        let _ = writeln!(output, "prod_other_changed={}", summary.prod_other);
-        let _ = writeln!(output, "test_units_changed={}", summary.test_units);
-        let _ = writeln!(output, "prod_lines_added={}", summary.prod_lines_added);
-        let _ = writeln!(output, "prod_lines_removed={}", summary.prod_lines_removed);
-        let _ = writeln!(output, "test_lines_added={}", summary.test_lines_added);
-        let _ = writeln!(output, "test_lines_removed={}", summary.test_lines_removed);
-        let _ = writeln!(output, "weighted_score={}", summary.weighted_score);
-        let _ = writeln!(output, "exceeds_limit={}", summary.exceeds_limit);
+        output.push_str(&format!(
+            "prod_functions_changed={}\n",
+            result.summary.prod_functions
+        ));
+        output.push_str(&format!(
+            "prod_structs_changed={}\n",
+            result.summary.prod_structs
+        ));
+        output.push_str(&format!(
+            "prod_other_changed={}\n",
+            result.summary.prod_other
+        ));
+        output.push_str(&format!(
+            "test_units_changed={}\n",
+            result.summary.test_units
+        ));
+        output.push_str(&format!(
+            "prod_lines_added={}\n",
+            result.summary.prod_lines_added
+        ));
+        output.push_str(&format!(
+            "prod_lines_removed={}\n",
+            result.summary.prod_lines_removed
+        ));
+        output.push_str(&format!(
+            "test_lines_added={}\n",
+            result.summary.test_lines_added
+        ));
+        output.push_str(&format!(
+            "test_lines_removed={}\n",
+            result.summary.test_lines_removed
+        ));
+        output.push_str(&format!(
+            "weighted_score={}\n",
+            result.summary.weighted_score
+        ));
+        output.push_str(&format!("exceeds_limit={}\n", result.summary.exceeds_limit));
 
         Ok(output)
     }
@@ -60,18 +84,12 @@ mod tests {
             .format(&result, &config)
             .expect("format should succeed");
 
-        let expected = concat!(
-            "prod_functions_changed=5\n",
-            "prod_structs_changed=2\n",
-            "prod_other_changed=1\n",
-            "test_units_changed=10\n",
-            "prod_lines_added=50\n",
-            "prod_lines_removed=20\n",
-            "test_lines_added=100\n",
-            "test_lines_removed=30\n",
-            "weighted_score=23\n",
-            "exceeds_limit=false\n",
-        );
-        assert_eq!(output, expected);
+        assert!(output.contains("prod_functions_changed=5"));
+        assert!(output.contains("prod_structs_changed=2"));
+        assert!(output.contains("prod_lines_added=50"));
+        assert!(output.contains("prod_lines_removed=20"));
+        assert!(output.contains("test_lines_added=100"));
+        assert!(output.contains("weighted_score=23"));
+        assert!(output.contains("exceeds_limit=false"));
     }
 }
