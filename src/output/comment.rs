@@ -1,12 +1,30 @@
 // SPDX-FileCopyrightText: 2025 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+use std::fmt::Write;
+
 use crate::{
+    classifier::rules::exceeded_per_type_limits,
     config::Config,
-    types::{AnalysisResult, Change, ExclusionReason, SemanticUnitKind},
+    types::{AnalysisResult, Change, ExclusionReason},
 };
 
+/// Escapes text for a markdown table cell rendered as inline code
+///
+/// A pipe would break the table row and a backtick would terminate the code
+/// span, so both are replaced with safe stand-ins.
+fn escape_cell(text: &str) -> String {
+    text.replace('|', "\\|").replace('`', "'")
+}
+
+/// Returns the status icon for a limit comparison
+fn status_icon(exceeded: bool) -> &'static str {
+    if exceeded { "❌" } else { "✅" }
+}
+
 const COMMENT_MARKER: &str = "<!-- rust-diff-analyzer-comment -->";
+
+const MAX_SKIPPED_LISTED: usize = 10;
 
 /// Formats analysis result as a markdown PR comment
 ///
@@ -42,7 +60,6 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     output.push('\n');
     output.push_str("## Rust Diff Analysis\n\n");
 
-    // Verdict at the top - most important info first
     if summary.exceeds_limit {
         output.push_str("> [!CAUTION]\n");
         output.push_str(
@@ -71,10 +88,16 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
                 summary.prod_lines_added, max_lines
             ));
         }
+        for (kind, count, limit) in exceeded_per_type_limits(&result.changes, config) {
+            exceeded.push(format!(
+                "**{}** changed units of type `{}` (limit: {})",
+                count, kind, limit
+            ));
+        }
         if !exceeded.is_empty() {
             output.push_str(">\n");
             for item in &exceeded {
-                output.push_str(&format!("> - {}\n", item));
+                let _ = writeln!(output, "> - {}", item);
             }
         }
     } else {
@@ -82,7 +105,6 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
         output.push_str("> **PR size is within limits.** Good job keeping changes focused!\n");
     }
 
-    // Limits section - collapsible
     output.push_str("\n<details>\n");
     output.push_str(
         "<summary><strong>Limits</strong> — configured thresholds for this \
@@ -93,38 +115,30 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     output.push_str("| Metric | Value | Limit | Status |\n");
     output.push_str("|--------|------:|------:|:------:|\n");
 
-    let units_status = if summary.total_prod_units() > config.limits.max_prod_units {
-        "❌"
-    } else {
-        "✅"
-    };
-    output.push_str(&format!(
-        "| Production Units | {} | {} | {} |\n",
+    let _ = writeln!(
+        output,
+        "| Production Units | {} | {} | {} |",
         summary.total_prod_units(),
         config.limits.max_prod_units,
-        units_status
-    ));
+        status_icon(summary.total_prod_units() > config.limits.max_prod_units)
+    );
 
-    let score_status = if summary.weighted_score > config.limits.max_weighted_score {
-        "❌"
-    } else {
-        "✅"
-    };
-    output.push_str(&format!(
-        "| Weighted Score | {} | {} | {} |\n",
-        summary.weighted_score, config.limits.max_weighted_score, score_status
-    ));
+    let _ = writeln!(
+        output,
+        "| Weighted Score | {} | {} | {} |",
+        summary.weighted_score,
+        config.limits.max_weighted_score,
+        status_icon(summary.weighted_score > config.limits.max_weighted_score)
+    );
 
     if let Some(max_lines) = config.limits.max_prod_lines {
-        let lines_status = if summary.prod_lines_added > max_lines {
-            "❌"
-        } else {
-            "✅"
-        };
-        output.push_str(&format!(
-            "| Lines Added | {} | {} | {} |\n",
-            summary.prod_lines_added, max_lines, lines_status
-        ));
+        let _ = writeln!(
+            output,
+            "| Lines Added | {} | {} | {} |",
+            summary.prod_lines_added,
+            max_lines,
+            status_icon(summary.prod_lines_added > max_lines)
+        );
     }
 
     output.push_str("\n**Understanding the metrics:**\n");
@@ -139,7 +153,6 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     output.push_str("- **Lines Added**: Raw count of new lines in production code\n");
     output.push_str("\n</details>\n");
 
-    // Summary section - collapsible
     output.push_str("\n<details>\n");
     output.push_str(
         "<summary><strong>Summary</strong> — breakdown of changes by category</summary>\n\n",
@@ -150,38 +163,38 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     );
     output.push_str("| Metric | Production | Test |\n");
     output.push_str("|--------|----------:|-----:|\n");
-    output.push_str(&format!("| Functions | {} | - |\n", summary.prod_functions));
-    output.push_str(&format!(
-        "| Structs/Enums | {} | - |\n",
-        summary.prod_structs
-    ));
-    output.push_str(&format!("| Other | {} | - |\n", summary.prod_other));
-    output.push_str(&format!(
-        "| Lines added | +{} | +{} |\n",
+    let _ = writeln!(output, "| Functions | {} | - |", summary.prod_functions);
+    let _ = writeln!(output, "| Structs/Enums | {} | - |", summary.prod_structs);
+    let _ = writeln!(output, "| Other | {} | - |", summary.prod_other);
+    let _ = writeln!(
+        output,
+        "| Lines added | +{} | +{} |",
         summary.prod_lines_added, summary.test_lines_added
-    ));
-    output.push_str(&format!(
-        "| Lines removed | -{} | -{} |\n",
+    );
+    let _ = writeln!(
+        output,
+        "| Lines removed | -{} | -{} |",
         summary.prod_lines_removed, summary.test_lines_removed
-    ));
-    output.push_str(&format!(
-        "| **Total units** | **{}** | {} |\n",
+    );
+    let _ = writeln!(
+        output,
+        "| **Total units** | **{}** | {} |",
         summary.total_prod_units(),
         summary.test_units
-    ));
+    );
     output.push_str("\n</details>\n");
 
-    // Changed units - collapsible
     if config.output.include_details && !result.changes.is_empty() {
         let prod_changes: Vec<_> = result.production_changes().collect();
         let test_changes: Vec<_> = result.test_changes().collect();
 
         if !prod_changes.is_empty() {
             output.push_str("\n<details>\n");
-            output.push_str(&format!(
-                "<summary><strong>Production Changes</strong> — {} units modified</summary>\n\n",
+            let _ = writeln!(
+                output,
+                "<summary><strong>Production Changes</strong> — {} units modified</summary>\n",
                 prod_changes.len()
-            ));
+            );
             output.push_str(
                 "> *Semantic units (functions, structs, etc.) that were added or modified in \
                  production code.*\n\n",
@@ -189,22 +202,23 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|:----:|--------:|\n");
             for change in prod_changes {
-                output.push_str(&format_change_row(change));
+                write_change_row(&mut output, change);
             }
             output.push_str("\n</details>\n");
         }
 
         if !test_changes.is_empty() {
             output.push_str("\n<details>\n");
-            output.push_str(&format!(
-                "<summary><strong>Test Changes</strong> — {} units modified</summary>\n\n",
+            let _ = writeln!(
+                output,
+                "<summary><strong>Test Changes</strong> — {} units modified</summary>\n",
                 test_changes.len()
-            ));
+            );
             output.push_str("> *Test code changes don't count toward PR size limits.*\n\n");
             output.push_str("| File | Unit | Type | Changes |\n");
             output.push_str("|------|------|:----:|--------:|\n");
             for change in test_changes {
-                output.push_str(&format_change_row(change));
+                write_change_row(&mut output, change);
             }
             output.push_str("\n</details>\n");
         }
@@ -220,37 +234,19 @@ pub fn format_comment(result: &AnalysisResult, config: &Config) -> String {
     output
 }
 
-fn format_change_row(change: &Change) -> String {
-    let kind = match change.unit.kind {
-        SemanticUnitKind::Function => "function",
-        SemanticUnitKind::Struct => "struct",
-        SemanticUnitKind::Enum => "enum",
-        SemanticUnitKind::Trait => "trait",
-        SemanticUnitKind::Impl => "impl",
-        SemanticUnitKind::Const => "const",
-        SemanticUnitKind::Static => "static",
-        SemanticUnitKind::TypeAlias => "type",
-        SemanticUnitKind::Macro => "macro",
-        SemanticUnitKind::Module => "module",
-    };
-
+fn write_change_row(output: &mut String, change: &Change) {
     let span = &change.unit.span;
-    let file_with_lines = format!(
-        "`{}:{}-{}`",
-        change.file_path.display(),
+    let _ = writeln!(
+        output,
+        "| `{}:{}-{}` | `{}` | {} | +{} -{} |",
+        escape_cell(&change.file_path.display().to_string()),
         span.start,
-        span.end
+        span.end,
+        escape_cell(&change.unit.qualified_name()),
+        change.unit.kind.as_str(),
+        change.lines_added,
+        change.lines_removed
     );
-
-    let changes = format!("+{} -{}", change.lines_added, change.lines_removed);
-
-    format!(
-        "| {} | `{}` | {} | {} |\n",
-        file_with_lines,
-        change.unit.qualified_name(),
-        kind,
-        changes
-    )
 }
 
 fn format_scope_section(output: &mut String, result: &AnalysisResult) {
@@ -267,16 +263,17 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
     output.push_str("<summary>Analysis Scope</summary>\n\n");
 
     if !scope.analyzed_files.is_empty() {
-        output.push_str(&format!(
-            "**Analyzed:** {} Rust files\n\n",
+        let _ = writeln!(
+            output,
+            "**Analyzed:** {} Rust files\n",
             scope.analyzed_files.len()
-        ));
+        );
     }
 
     if !scope.exclusion_patterns.is_empty() {
         output.push_str("**Excluded patterns:**\n");
         for pattern in &scope.exclusion_patterns {
-            output.push_str(&format!("- `{}`\n", pattern));
+            let _ = writeln!(output, "- `{}`", escape_cell(pattern));
         }
         output.push('\n');
     }
@@ -289,31 +286,43 @@ fn format_scope_section(output: &mut String, result: &AnalysisResult) {
     if non_rust > 0 || ignored > 0 || deleted > 0 || errored > 0 {
         output.push_str("**Skipped files:**\n");
         if non_rust > 0 {
-            output.push_str(&format!("- {} non-Rust files\n", non_rust));
+            let _ = writeln!(output, "- {} non-Rust files", non_rust);
         }
         if ignored > 0 {
-            output.push_str(&format!("- {} files matched ignore patterns\n", ignored));
+            let _ = writeln!(output, "- {} files matched ignore patterns", ignored);
         }
         if deleted > 0 {
-            output.push_str(&format!("- {} deleted files\n", deleted));
+            let _ = writeln!(output, "- {} deleted files", deleted);
         }
         if errored > 0 {
-            output.push_str(&format!("- {} files with read/parse errors\n", errored));
+            let _ = writeln!(output, "- {} files with read/parse errors", errored);
         }
         output.push('\n');
     }
 
-    if !scope.skipped_files.is_empty() && scope.skipped_files.len() <= 10 {
+    if !scope.skipped_files.is_empty() {
         output.push_str("**Skipped file list:**\n");
-        for skipped in &scope.skipped_files {
+        for skipped in scope.skipped_files.iter().take(MAX_SKIPPED_LISTED) {
             let reason = match &skipped.reason {
                 ExclusionReason::NonRust => "non-Rust".to_string(),
-                ExclusionReason::IgnorePattern(p) => format!("pattern: {}", p),
+                ExclusionReason::IgnorePattern(p) => format!("pattern: {}", escape_cell(p)),
                 ExclusionReason::Deleted => "deleted".to_string(),
-                ExclusionReason::ReadError(e) => format!("read error: {}", e),
-                ExclusionReason::ParseError(e) => format!("parse error: {}", e),
+                ExclusionReason::ReadError(e) => format!("read error: {}", escape_cell(e)),
+                ExclusionReason::ParseError(e) => format!("parse error: {}", escape_cell(e)),
             };
-            output.push_str(&format!("- `{}` ({})\n", skipped.path.display(), reason));
+            let _ = writeln!(
+                output,
+                "- `{}` ({})",
+                escape_cell(&skipped.path.display().to_string()),
+                reason
+            );
+        }
+        if scope.skipped_files.len() > MAX_SKIPPED_LISTED {
+            let _ = writeln!(
+                output,
+                "- …and {} more",
+                scope.skipped_files.len() - MAX_SKIPPED_LISTED
+            );
         }
         output.push('\n');
     }
@@ -374,5 +383,76 @@ mod tests {
     fn test_get_comment_marker() {
         let marker = get_comment_marker();
         assert!(marker.contains("rust-diff-analyzer"));
+    }
+
+    #[test]
+    fn test_escape_cell() {
+        assert_eq!(escape_cell("plain/path.rs"), "plain/path.rs");
+        assert_eq!(escape_cell("a|b.rs"), "a\\|b.rs");
+        assert_eq!(escape_cell("a`b.rs"), "a'b.rs");
+    }
+
+    #[test]
+    fn test_per_type_limit_reason_listed() {
+        use std::path::PathBuf;
+
+        use crate::{
+            config::PerTypeLimits,
+            types::{Change, CodeType, LineSpan, SemanticUnit, SemanticUnitKind, Visibility},
+        };
+
+        let make_change = || {
+            Change::new(
+                PathBuf::from("src/lib.rs"),
+                SemanticUnit::new(
+                    SemanticUnitKind::Function,
+                    "f".to_string(),
+                    Visibility::Public,
+                    LineSpan::new(1, 3),
+                    vec![],
+                ),
+                CodeType::Production,
+                1,
+                0,
+            )
+        };
+
+        let mut config = Config::default();
+        config.limits.per_type = Some(PerTypeLimits {
+            functions: Some(1),
+            ..PerTypeLimits::default()
+        });
+
+        let summary = Summary {
+            exceeds_limit: true,
+            ..Default::default()
+        };
+        let result = AnalysisResult::new(
+            vec![make_change(), make_change()],
+            summary,
+            AnalysisScope::new(),
+        );
+        let output = format_comment(&result, &config);
+
+        assert!(output.contains("changed units of type `function` (limit: 1)"));
+    }
+
+    #[test]
+    fn test_skipped_file_list_truncated() {
+        use std::path::PathBuf;
+
+        let mut scope = AnalysisScope::new();
+        for i in 0..15 {
+            scope.add_skipped(PathBuf::from(format!("file{}.txt", i)), {
+                ExclusionReason::NonRust
+            });
+        }
+        let result = AnalysisResult::new(vec![], Summary::default(), scope);
+        let config = Config::default();
+        let output = format_comment(&result, &config);
+
+        assert!(output.contains("…and 5 more"));
+        assert!(output.contains("`file0.txt`"));
+        assert!(!output.contains("`file14.txt`"));
     }
 }

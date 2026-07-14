@@ -397,33 +397,33 @@ fn parse_diff_header(line: &str) -> Result<PathBuf, AppError> {
 }
 
 fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), AppError> {
-    let line = line
+    let invalid_header = || {
+        AppError::from(DiffParseError {
+            message: format!("invalid hunk header: {}", line),
+        })
+    };
+
+    let ranges = line
         .strip_prefix("@@")
-        .and_then(|s| s.split("@@").next())
-        .ok_or_else(|| {
-            AppError::from(DiffParseError {
-                message: format!("invalid hunk header: {}", line),
-            })
-        })?
+        .ok_or_else(invalid_header)?
+        .split("@@")
+        .next()
+        .unwrap_or("")
         .trim();
 
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    if parts.len() < 2 {
-        return Err(DiffParseError {
-            message: format!("invalid hunk header: {}", line),
-        }
-        .into());
-    }
+    let mut parts = ranges.split_whitespace();
+    let old_part = parts.next().ok_or_else(invalid_header)?;
+    let new_part = parts.next().ok_or_else(invalid_header)?;
 
-    let old_range = parts[0].strip_prefix('-').ok_or_else(|| {
+    let old_range = old_part.strip_prefix('-').ok_or_else(|| {
         AppError::from(DiffParseError {
-            message: format!("invalid old range: {}", parts[0]),
+            message: format!("invalid old range: {}", old_part),
         })
     })?;
 
-    let new_range = parts[1].strip_prefix('+').ok_or_else(|| {
+    let new_range = new_part.strip_prefix('+').ok_or_else(|| {
         AppError::from(DiffParseError {
-            message: format!("invalid new range: {}", parts[1]),
+            message: format!("invalid new range: {}", new_part),
         })
     })?;
 
@@ -434,22 +434,24 @@ fn parse_hunk_header(line: &str) -> Result<(usize, usize, usize, usize), AppErro
 }
 
 fn parse_range(range: &str) -> Result<(usize, usize), AppError> {
-    let parts: Vec<&str> = range.split(',').collect();
+    let (start_part, count_part) = match range.split_once(',') {
+        Some((start, count)) => (start, Some(count)),
+        None => (range, None),
+    };
 
-    let start = parts[0].parse::<usize>().map_err(|_| {
+    let start = start_part.parse::<usize>().map_err(|_| {
         AppError::from(DiffParseError {
-            message: format!("invalid line number: {}", parts[0]),
+            message: format!("invalid line number: {}", start_part),
         })
     })?;
 
-    let count = if parts.len() > 1 {
-        parts[1].parse::<usize>().map_err(|_| {
+    let count = match count_part {
+        Some(count) => count.parse::<usize>().map_err(|_| {
             AppError::from(DiffParseError {
-                message: format!("invalid line count: {}", parts[1]),
+                message: format!("invalid line count: {}", count),
             })
-        })?
-    } else {
-        1
+        })?,
+        None => 1,
     };
 
     Ok((start, count))

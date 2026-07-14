@@ -223,11 +223,11 @@ impl SemanticUnitVisitor {
     ) {
         let mut attributes = self.extract_attributes(attrs);
 
-        if self.in_test_module && !attributes.contains(&"cfg_test".to_string()) {
+        if self.in_test_module && !attributes.iter().any(|a| a == "cfg_test") {
             attributes.push("cfg_test".to_string());
         }
 
-        if self.has_test_attribute(attrs) && !attributes.contains(&"test".to_string()) {
+        if self.has_test_attribute(attrs) && !attributes.iter().any(|a| a == "test") {
             attributes.push("test".to_string());
         }
 

@@ -324,7 +324,6 @@ impl Config {
             .into());
         }
 
-        // Validate ignored_authors - check for duplicates
         let mut seen = std::collections::HashSet::new();
         for author in &self.classification.ignored_authors {
             if author.is_empty() {
