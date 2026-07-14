@@ -342,9 +342,10 @@ The analyzer automatically classifies code into categories:
 
 ### Classification Rules
 
-1. **File path**: Code in `tests/`, `benches/`, or `examples/` directories is not production
-2. **Attributes**: Functions with `#[test]`, `#[bench]`, or `#[cfg(test)]` are tests
-3. **Module context**: Code inside `mod tests { }` blocks is test code
+1. **File path**: Code in `tests/`, `benches/`, or `examples/` directories is not production. Patterns match whole path components, so `src/attests/mod.rs` is not mistaken for test code and an ignore pattern `src/gen` does not swallow `src/generic.rs`.
+2. **Attributes**: Functions with `#[test]`, `#[bench]`, or multi-segment test macros such as `#[tokio::test]` are tests. `cfg` predicates are parsed structurally: `#[cfg(test)]` and `#[cfg(any(test, ...))]` mark test code, while `#[cfg(not(test))]` stays production. `#[cfg(feature = "...")]` gates are matched against the configured `test_features`.
+3. **Module and impl context**: Code inside `mod tests { }`, `#[cfg(test)] mod` blocks, or `#[cfg(test)] impl` blocks is test code.
+4. **Robustness**: Deleted, unreadable, and unparsable files are skipped and reported in the analysis scope instead of failing the run; renames, quoted paths, and non-UTF-8 diff content are handled.
 
 ### Classification Types
 
