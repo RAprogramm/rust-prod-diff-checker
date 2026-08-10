@@ -10,7 +10,7 @@ keywords = ["rust", "diff", "analyzer", "github-actions", "code-review"]
 categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
-syn = { version = "2", features = ["full", "parsing", "visit", "extra-traits"] }
+syn = { version = "3", features = ["full", "parsing", "visit", "extra-traits"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 similar = "3"
 serde = { version = "1", features = ["derive"] }
